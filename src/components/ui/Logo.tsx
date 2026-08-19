@@ -90,7 +90,7 @@ export function Logo({
           <div className="flex flex-col items-center gap-1.5">
             <div className="flex items-center gap-2">
               <h3 className="font-display text-2xl font-extrabold text-text-primary">
-                منصة نبض
+                 نبض
               </h3>
               <span className="font-display font-bold text-xs px-2 py-0.5 rounded-md bg-primary-soft text-primary border border-primary/20">
                 Nabd SaaS
