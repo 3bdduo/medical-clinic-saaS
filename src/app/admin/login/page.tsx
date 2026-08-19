@@ -8,20 +8,14 @@ import { Button } from "@/components/ui/Button";
 import { Field } from "@/components/ui/Input";
 import { Card } from "@/components/ui/Card";
 import { ApiError } from "@/lib/http";
-import { validateEgyptianNationalId, validatePassword } from "@/lib/validators";
+import { validatePassword } from "@/lib/validators";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Logo } from "@/components/ui/Logo";
 
-const ROLE_HOME: Record<string, string> = {
-  Admin: "/admin",
-  Doctor: "/doctor",
-  Patient: "/patient",
-};
-
-export default function LoginPage() {
+export default function AdminLoginPage() {
   const router = useRouter();
   const { login } = useAuth();
-  const [nationalId, setNationalId] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
@@ -30,8 +24,9 @@ export default function LoginPage() {
   function validate(): boolean {
     const errs: Record<string, string> = {};
 
-    const nidErr = validateEgyptianNationalId(nationalId);
-    if (nidErr) errs.nationalId = nidErr;
+    if (!username || !username.trim()) {
+      errs.username = "اسم المستخدم مطلوب";
+    }
 
     const passErr = validatePassword(password);
     if (passErr) errs.password = passErr;
@@ -50,11 +45,15 @@ export default function LoginPage() {
 
     setLoading(true);
     try {
-      const role = await login({ nationalId: nationalId.trim(), password });
-      router.push(ROLE_HOME[role] ?? "/");
+      const role = await login({ nationalId: username.trim(), password });
+      if (role === "Admin") {
+        router.push("/admin");
+      } else {
+        setError("هذا الحساب ليس لديه صلاحية مشرف الإدارة");
+      }
     } catch (err) {
       setError(
-        err instanceof ApiError ? err.message : "تعذّر تسجيل الدخول، حاول مرة أخرى"
+        err instanceof ApiError ? err.message : "تعذّر تسجيل دخول المشرف، تحقق من البيانات"
       );
     } finally {
       setLoading(false);
@@ -66,35 +65,38 @@ export default function LoginPage() {
       <div className="absolute top-6 left-6 z-20">
         <ThemeToggle />
       </div>
-      <Card glass vibrant className="w-full max-w-md animate-scale-in-slow p-8 border-primary/20 shadow-2xl">
+      <Card glass vibrant className="w-full max-w-md animate-scale-in-slow p-8 border-accent/30 shadow-2xl shadow-accent/10">
         <div className="flex flex-col items-center text-center">
           <div className="mb-4">
             <Logo size="lg" href={null} />
           </div>
+          <div className="inline-flex items-center gap-2 rounded-full border border-accent/30 bg-accent/10 px-3 py-1 text-xs font-bold text-accent mb-2">
+            <span>🛡️</span>
+            <span>بوابة الإدارة والمشرفين</span>
+          </div>
           <h1 className="font-display text-2xl font-extrabold text-text-primary">
-            تسجيل الدخول
+            تسجيل دخول المشرف
           </h1>
           <p className="mt-1.5 text-sm text-text-secondary">
-            أدخل الرقم القومي وكلمة المرور للوصول إلى لوحة التحكم
+            أدخل اسم المستخدم وكلمة المرور للوصول إلى لوحة التحكم الإدارية
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="mt-8 flex flex-col gap-5" noValidate>
           <Field
-            label="الرقم القومي (14 رقمًا)"
+            label="اسم المستخدم (Username)"
             type="text"
-            inputMode="numeric"
             required
-            value={nationalId}
+            value={username}
             onChange={(e) => {
-              setNationalId(e.target.value);
-              if (fieldErrors.nationalId) setFieldErrors((prev) => ({ ...prev, nationalId: "" }));
+              setUsername(e.target.value);
+              if (fieldErrors.username) setFieldErrors((prev) => ({ ...prev, username: "" }));
             }}
-            error={fieldErrors.nationalId}
-            placeholder="مثال: 29805141501234"
+            error={fieldErrors.username}
+            placeholder="مثال: admin"
           />
           <Field
-            label="كلمة المرور"
+            label="كلمة المرور (Password)"
             type="password"
             required
             value={password}
@@ -118,25 +120,17 @@ export default function LoginPage() {
           )}
 
           <Button type="submit" variant="vibrant" loading={loading} className="mt-2 w-full shadow-glow-cyan text-base">
-            {loading ? "جارٍ تسجيل الدخول..." : "دخول إلى النظام"}
+            {loading ? "جارٍ تسجيل الدخول..." : "دخول المشرف إلى النظام"}
           </Button>
         </form>
 
-        <div className="mt-6 flex flex-col gap-3 pt-4 border-t border-border/60 text-sm">
-          <div className="flex items-center justify-between">
-            <Link href="/forgot-password" className="font-medium text-primary hover:underline transition-colors">
-              نسيت كلمة المرور؟
-            </Link>
-            <Link href="/register" className="font-medium text-text-secondary hover:text-primary transition-colors">
-              إنشاء حساب عيادة جديدة
-            </Link>
-          </div>
-          <div className="text-center pt-2 border-t border-border/40">
-            <Link href="/admin/login" className="text-xs font-semibold text-accent hover:underline inline-flex items-center gap-1">
-              <span>🛡️</span>
-              <span>دخول المشرف الإداري (Admin Portal)</span>
-            </Link>
-          </div>
+        <div className="mt-6 flex items-center justify-between text-sm pt-4 border-t border-border/60">
+          <Link href="/login" className="font-medium text-primary hover:underline transition-colors">
+            دخول الأطباء والمرضى 👤
+          </Link>
+          <Link href="/" className="font-medium text-text-secondary hover:text-primary transition-colors">
+            الصفحة الرئيسية 🏠
+          </Link>
         </div>
       </Card>
     </div>
