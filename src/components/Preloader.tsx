@@ -1,120 +1,173 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 // Duration in ms — 5 seconds then fade out
 const SPLASH_MS = 5000;
+const FADE_MS = 700;
+
+// Inject keyframes once at module level (runs client-side only)
+if (typeof document !== "undefined") {
+  if (!document.getElementById("nabd-splash-styles")) {
+    const s = document.createElement("style");
+    s.id = "nabd-splash-styles";
+    s.textContent = `
+      @keyframes nabd-fill-bar { from { width:0% } to { width:100% } }
+      @keyframes nabd-fade-in  { from { opacity:0; transform:translateY(12px) } to { opacity:1; transform:translateY(0) } }
+      .nabd-splash-enter { animation: nabd-fade-in 0.6s cubic-bezier(0.16,1,0.3,1) both; }
+      /* Hide body content while splash is visible — applied immediately via this style block */
+      .nabd-body-locked > *:not(#nabd-splash-root) { visibility: hidden !important; }
+    `;
+    document.head.appendChild(s);
+  }
+}
 
 export function Preloader({ children }: { children: React.ReactNode }) {
-  const [done, setDone] = useState(false);
-  const [fadeOut, setFadeOut] = useState(false);
-  const [mounted, setMounted] = useState(false);
+  // Check sessionStorage SYNCHRONOUSLY during first client render
+  const skipRef = useRef(
+    typeof window !== "undefined" &&
+      sessionStorage.getItem("nabd-splash") === "1"
+  );
+
+  const [phase, setPhase] = useState<"splash" | "fading" | "done">(
+    skipRef.current ? "done" : "splash"
+  );
 
   useEffect(() => {
-    setMounted(true);
-    // Skip on repeat visits within the same session
-    const already = sessionStorage.getItem("nabd-splash") === "1";
-    if (already) {
-      setDone(true);
-      return;
-    }
+    if (skipRef.current) return;
 
-    const fadeTimer = setTimeout(() => setFadeOut(true), SPLASH_MS);
+    // Lock body so nothing beneath is visible
+    document.body.classList.add("nabd-body-locked");
+
+    const fadeTimer = setTimeout(() => setPhase("fading"), SPLASH_MS);
     const doneTimer = setTimeout(() => {
       sessionStorage.setItem("nabd-splash", "1");
-      setDone(true);
-    }, SPLASH_MS + 700);
+      document.body.classList.remove("nabd-body-locked");
+      setPhase("done");
+    }, SPLASH_MS + FADE_MS);
 
     return () => {
       clearTimeout(fadeTimer);
       clearTimeout(doneTimer);
+      document.body.classList.remove("nabd-body-locked");
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  if (!mounted || done) {
-    return <>{children}</>;
-  }
 
   return (
     <>
-      <div
-        aria-hidden
-        className={`fixed inset-0 z-[999] flex flex-col items-center justify-center bg-bg transition-opacity duration-700 ${
-          fadeOut ? "opacity-0 pointer-events-none" : "opacity-100"
-        }`}
-      >
-        <ArcNabdSplash />
-      </div>
-      <div className="invisible">{children}</div>
+      {/* Splash overlay — always rendered on first paint to avoid flash */}
+      {phase !== "done" && (
+        <div
+          id="nabd-splash-root"
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 999999,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            background: "var(--color-bg, #0d1117)",
+            opacity: phase === "fading" ? 0 : 1,
+            transition: `opacity ${FADE_MS}ms cubic-bezier(0.16,1,0.3,1)`,
+            pointerEvents: phase === "fading" ? "none" : "all",
+          }}
+        >
+          <ArcNabdSplash />
+        </div>
+      )}
+
+      {/* Page children — always rendered (SSR-safe), hidden by .nabd-body-locked until splash done */}
+      {children}
     </>
   );
 }
 
+/** ARC × Nabd community splash */
 function ArcNabdSplash() {
-  const isDark =
-    typeof window !== "undefined" &&
-    document.documentElement.classList.contains("dark");
+  const [isDark, setIsDark] = useState(false);
 
-  const nabdLogo = isDark
-    ? "/logo/nabd-logo-dark.png"
-    : "/logo/nabd-logo-light.png";
+  useEffect(() => {
+    setIsDark(document.documentElement.classList.contains("dark"));
+  }, []);
+
+  const nabdLogo = isDark ? "/logo/nabd-logo-dark.png" : "/logo/nabd-logo-light.png";
 
   return (
-    <div className="flex flex-col items-center gap-10 px-6 animate-fade-in">
+    <div className="nabd-splash-enter flex flex-col items-center gap-10 px-6">
 
       {/* Logos row */}
-      <div className="flex items-center gap-8 sm:gap-12">
+      <div className="flex items-center gap-8 sm:gap-14">
 
-        {/* ── ARC Logo ── */}
+        {/* ARC Logo */}
         <div className="flex flex-col items-center gap-3">
-          <div className="relative h-28 w-28 sm:h-32 sm:w-32 rounded-full overflow-hidden shadow-glow-cyan ring-2 ring-primary/30 bg-[#1a1f2e] flex items-center justify-center">
+          <div
+            className="relative flex items-center justify-center overflow-hidden rounded-full shadow-[0_0_35px_rgba(0,229,255,0.35)]"
+            style={{
+              width: "clamp(100px, 20vw, 128px)",
+              height: "clamp(100px, 20vw, 128px)",
+              border: "2px solid rgba(0,229,255,0.3)",
+              background: "#1a1f2e",
+            }}
+          >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/logo/arc-logo.jpg"
-              alt="ARC Community Logo"
-              className="h-full w-full object-cover"
+              alt="ARC Community"
+              style={{ width: "100%", height: "100%", objectFit: "cover" }}
             />
-            {/* subtle cyan overlay tint to harmonize with Nabd palette */}
-            <div className="absolute inset-0 bg-primary/10 mix-blend-color pointer-events-none" />
+            <div style={{
+              position: "absolute", inset: 0,
+              background: "rgba(0,229,255,0.06)",
+              mixBlendMode: "color",
+              pointerEvents: "none",
+            }} />
           </div>
           <div className="flex flex-col items-center gap-0.5">
-            <span className="font-display text-xl font-extrabold gradient-text-alive tracking-tight">
-              ARC
-            </span>
-            <span className="text-xs font-semibold text-text-secondary tracking-wider uppercase">
-              Community
-            </span>
+            <span className="font-display text-xl font-extrabold gradient-text-alive tracking-tight">ARC</span>
+            <span className="text-[11px] font-semibold text-text-secondary tracking-widest uppercase">Community</span>
           </div>
         </div>
 
-        {/* ── Divider ── */}
-        <div className="flex flex-col items-center gap-1 select-none">
-          <span className="text-3xl font-light text-primary/50">×</span>
-        </div>
+        {/* × Divider */}
+        <span style={{ fontSize: "2rem", fontWeight: 200, opacity: 0.4, color: "var(--color-primary)" }}>×</span>
 
-        {/* ── Nabd Logo ── */}
+        {/* Nabd Logo */}
         <div className="flex flex-col items-center gap-3">
-          <div className="relative h-28 w-28 sm:h-32 sm:w-32 rounded-full overflow-hidden shadow-glow-cyan ring-2 ring-primary/30 bg-surface flex items-center justify-center">
+          <div
+            className="relative flex items-center justify-center overflow-hidden rounded-full shadow-[0_0_35px_rgba(0,229,255,0.35)]"
+            style={{
+              width: "clamp(100px, 20vw, 128px)",
+              height: "clamp(100px, 20vw, 128px)",
+              border: "2px solid rgba(0,229,255,0.3)",
+              background: "var(--color-surface, #1a1f2e)",
+            }}
+          >
             {/* Pulse rings */}
-            <span className="absolute inset-[-4px] rounded-full border-2 border-primary/20 animate-pulse-ring" />
-            <span
-              className="absolute inset-[-10px] rounded-full border border-primary/10 animate-pulse-ring"
-              style={{ animationDelay: "0.5s" }}
-            />
+            <span style={{
+              position: "absolute",
+              inset: -6,
+              borderRadius: "9999px",
+              border: "1.5px solid rgba(0,229,255,0.2)",
+              animation: "pulse 2s ease-in-out infinite",
+            }} />
+            <span style={{
+              position: "absolute",
+              inset: -14,
+              borderRadius: "9999px",
+              border: "1px solid rgba(0,229,255,0.1)",
+              animation: "pulse 2s ease-in-out 0.5s infinite",
+            }} />
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={nabdLogo}
-              alt="نبض Nabd Logo"
-              className="h-[85%] w-[85%] object-contain relative z-10"
+              alt="نبض Nabd"
+              style={{ width: "82%", height: "82%", objectFit: "contain", position: "relative", zIndex: 1 }}
             />
           </div>
           <div className="flex flex-col items-center gap-0.5">
-            <span className="font-display text-xl font-extrabold gradient-text-alive tracking-tight">
-              نبض
-            </span>
-            <span className="text-xs font-semibold text-text-secondary tracking-wider uppercase">
-              Nabd
-            </span>
+            <span className="font-display text-xl font-extrabold gradient-text-alive tracking-tight">نبض</span>
+            <span className="text-[11px] font-semibold text-text-secondary tracking-widest uppercase">Nabd</span>
           </div>
         </div>
       </div>
@@ -123,39 +176,31 @@ function ArcNabdSplash() {
       <div className="flex flex-col items-center gap-1.5 text-center">
         <p className="text-sm font-semibold text-text-secondary">
           مجتمع{" "}
-          <span className="text-primary font-bold">ARC</span>{" "}
-          يُقدّم لكم
+          <span className="font-bold" style={{ color: "var(--color-primary)" }}>ARC</span>
+          {" "}يُقدّم لكم
         </p>
         <p className="font-display text-lg font-bold text-text-primary">
           منصة{" "}
-          <span className="gradient-text-alive">نبض</span>{" "}
-          لإدارة العيادات الطبية
+          <span className="gradient-text-alive">نبض</span>
+          {" "}لإدارة العيادات الطبية
         </p>
       </div>
 
       {/* Progress bar */}
-      <div className="h-1 w-52 overflow-hidden rounded-full bg-border/50">
-        <div
-          className="h-full rounded-full bg-gradient-to-l from-primary to-accent"
-          style={{
-            animation: `nabd-fill-bar ${SPLASH_MS}ms linear forwards`,
-          }}
-        />
+      <div style={{
+        width: 200,
+        height: 3,
+        borderRadius: 9999,
+        background: "rgba(255,255,255,0.08)",
+        overflow: "hidden",
+      }}>
+        <div style={{
+          height: "100%",
+          borderRadius: 9999,
+          background: "linear-gradient(to left, var(--color-primary), var(--color-accent))",
+          animation: `nabd-fill-bar ${SPLASH_MS}ms linear forwards`,
+        }} />
       </div>
-
-      {/* Inject keyframe once */}
-      <InjectKeyframe />
     </div>
   );
-}
-
-function InjectKeyframe() {
-  useEffect(() => {
-    if (document.getElementById("nabd-fill-bar-style")) return;
-    const s = document.createElement("style");
-    s.id = "nabd-fill-bar-style";
-    s.textContent = `@keyframes nabd-fill-bar { from { width: 0% } to { width: 100% } }`;
-    document.head.appendChild(s);
-  }, []);
-  return null;
 }

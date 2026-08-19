@@ -50,6 +50,12 @@ export default function RootLayout({
       <head>
         {/* Blocking script: applies the correct theme class before first paint. */}
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+        {/* Preload critical above-the-fold images */}
+        <link rel="preload" as="image" href="/logo/arc-logo.jpg" />
+        <link rel="preload" as="image" href="/logo/nabd-logo-dark.png" />
+        <link rel="preload" as="image" href="/logo/nabd-logo-light.png" />
+        <link rel="preload" as="image" href="/images/hero-clinic-1.jpg" />
+        <link rel="preload" as="image" href="/images/hero-clinic-2.jpg" />
       </head>
       <body className="font-body antialiased">
         <ThemeProvider>
