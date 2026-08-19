@@ -8,8 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { Field } from "@/components/ui/Input";
 import { Card } from "@/components/ui/Card";
 import { ApiError } from "@/lib/http";
-import { validateEgyptianNationalId, validatePassword } from "@/lib/validators";
-
+import { validatePassword } from "@/lib/validators";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Logo } from "@/components/ui/Logo";
 
@@ -30,8 +29,10 @@ export default function LoginPage() {
 
   function validate(): boolean {
     const errs: Record<string, string> = {};
-    const nidErr = validateEgyptianNationalId(nationalId);
-    if (nidErr) errs.nationalId = nidErr;
+    
+    if (!nationalId || !nationalId.trim()) {
+      errs.nationalId = "يرجى إدخال الرقم القومي أو اسم المستخدم";
+    }
 
     const passErr = validatePassword(password);
     if (passErr) errs.password = passErr;
@@ -50,7 +51,7 @@ export default function LoginPage() {
 
     setLoading(true);
     try {
-      const role = await login({ nationalId, password });
+      const role = await login({ nationalId: nationalId.trim(), password });
       router.push(ROLE_HOME[role] ?? "/");
     } catch (err) {
       setError(
@@ -75,15 +76,14 @@ export default function LoginPage() {
             تسجيل الدخول
           </h1>
           <p className="mt-1.5 text-sm text-text-secondary">
-            أدخل الرقم القومي وكلمة المرور للوصول إلى لوحة التحكم
+            أدخل الرقم القومي أو اسم المستخدم وكلمة المرور للوصول للنظام
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="mt-8 flex flex-col gap-5" noValidate>
           <Field
-            label="الرقم القومي (14 رقمًا)"
+            label="الرقم القومي / اسم المستخدم"
             type="text"
-            inputMode="numeric"
             required
             value={nationalId}
             onChange={(e) => {
@@ -91,7 +91,7 @@ export default function LoginPage() {
               if (fieldErrors.nationalId) setFieldErrors((prev) => ({ ...prev, nationalId: "" }));
             }}
             error={fieldErrors.nationalId}
-            placeholder="مثال: 29805141501234"
+            placeholder="مثال: admin أو الرقم القومي"
           />
           <Field
             label="كلمة المرور"
