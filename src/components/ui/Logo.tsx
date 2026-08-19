@@ -66,10 +66,14 @@ export function Logo({
           {/* Close Button */}
           <button
             onClick={() => setIsModalOpen(false)}
-            className="absolute top-4 left-4 flex h-9 w-9 items-center justify-center rounded-full bg-border/60 text-text-secondary hover:bg-danger/20 hover:text-danger transition-colors font-bold text-sm"
+            className="absolute top-3 right-3 flex h-8 w-8 items-center justify-center rounded-full bg-border/60 text-text-secondary hover:bg-danger/20 hover:text-danger transition-colors z-10"
             title="إغلاق"
+            aria-label="إغلاق"
           >
-            ✕
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+              <line x1="1" y1="1" x2="13" y2="13" />
+              <line x1="13" y1="1" x2="1" y2="13" />
+            </svg>
           </button>
 
           {/* Glowing Logo Frame */}

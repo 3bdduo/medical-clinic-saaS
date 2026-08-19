@@ -75,12 +75,22 @@ module.exports = {
           "0%": { opacity: "0", transform: "scale(0.92)" },
           "100%": { opacity: "1", transform: "scale(1)" },
         },
+        "slide-in-right": {
+          "0%": { opacity: "0", transform: "translateX(100%)" },
+          "100%": { opacity: "1", transform: "translateX(0)" },
+        },
+        "fade-in": {
+          "0%": { opacity: "0" },
+          "100%": { opacity: "1" },
+        },
       },
       animation: {
         drift: "drift 20s cubic-bezier(0.4, 0, 0.2, 1) infinite",
         "pulse-slow": "pulse-slow 7s ease-in-out infinite",
         "fade-in-slow": "fade-in-slow 0.7s cubic-bezier(0.16,1,0.3,1) both",
         "scale-in-slow": "scale-in-slow 0.6s cubic-bezier(0.16,1,0.3,1) both",
+        "slide-in-right": "slide-in-right 0.3s cubic-bezier(0.16,1,0.3,1) both",
+        "fade-in": "fade-in 0.5s ease both",
       },
     },
   },
