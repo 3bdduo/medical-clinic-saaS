@@ -1,7 +1,7 @@
 import { ButtonHTMLAttributes, forwardRef } from "react";
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: "primary" | "secondary" | "ghost" | "danger" | "vibrant";
+  variant?: "primary" | "secondary" | "ghost" | "danger" | "vibrant" | "outline";
   size?: "sm" | "md" | "lg";
   loading?: boolean;
 }
@@ -13,6 +13,8 @@ const variants: Record<NonNullable<ButtonProps["variant"]>, string> = {
     "bg-gradient-to-r from-cyan-400 via-primary to-emerald-400 text-slate-950 font-extrabold shadow-glow-cyan hover:shadow-glow-emerald hover:brightness-115 hover:-translate-y-0.5 active:scale-[0.98]",
   secondary:
     "bg-surface/90 text-text-primary border border-border/80 hover:border-primary/50 hover:bg-primary-soft hover:shadow-md hover:-translate-y-0.5 active:scale-[0.98]",
+  outline:
+    "bg-transparent text-text-primary border border-border/80 hover:border-primary/50 hover:bg-primary-soft hover:shadow-md hover:-translate-y-0.5 active:scale-[0.98]",
   ghost:
     "bg-transparent text-text-secondary hover:text-primary hover:bg-primary-soft hover:-translate-y-0.5 active:scale-[0.98]",
   danger:

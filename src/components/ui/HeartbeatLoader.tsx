@@ -1,31 +1,51 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
 
 export function HeartbeatLoader() {
-  const [isLoading, setIsLoading] = useState(false);
-  const loadingTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const minTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const startTimeRef = useRef<number>(0);
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
 
+  const [isLoading, setIsLoading] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const startTimeRef = useRef<number>(0);
+  const minTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // 1. Hide loader when route change completes
+  useEffect(() => {
+    setProgress(100);
+    const elapsed = Date.now() - startTimeRef.current;
+    const remaining = Math.max(0, 300 - elapsed);
+
+    minTimerRef.current = setTimeout(() => {
+      setIsLoading(false);
+      setProgress(0);
+    }, remaining);
+
+    return () => {
+      if (minTimerRef.current) clearTimeout(minTimerRef.current);
+    };
+  }, [pathname, searchParams]);
+
+  // 2. Global event listener for manual API calls or custom triggers
   useEffect(() => {
     function handleGlobalLoading(e: Event) {
       const customEv = e as CustomEvent<{ isLoading: boolean }>;
       const shouldLoad = customEv.detail?.isLoading;
 
       if (shouldLoad) {
-        if (loadingTimerRef.current) clearTimeout(loadingTimerRef.current);
         if (minTimerRef.current) clearTimeout(minTimerRef.current);
-        
         startTimeRef.current = Date.now();
+        setProgress(30);
         setIsLoading(true);
       } else {
-        // Enforce a minimum visible duration (600ms) for smooth ECG line animation
+        setProgress(100);
         const elapsed = Date.now() - startTimeRef.current;
-        const remaining = Math.max(0, 600 - elapsed);
-
+        const remaining = Math.max(0, 300 - elapsed);
         minTimerRef.current = setTimeout(() => {
           setIsLoading(false);
+          setProgress(0);
         }, remaining);
       }
     }
@@ -33,64 +53,128 @@ export function HeartbeatLoader() {
     window.addEventListener("global-loading", handleGlobalLoading);
     return () => {
       window.removeEventListener("global-loading", handleGlobalLoading);
-      if (loadingTimerRef.current) clearTimeout(loadingTimerRef.current);
-      if (minTimerRef.current) clearTimeout(minTimerRef.current);
     };
   }, []);
 
-  if (!isLoading) return null;
+  // 3. Instant Click Interceptor (0ms delay when user clicks ANY link or button)
+  useEffect(() => {
+    const handleDocumentClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (!target) return;
+
+      // Check if clicking an anchor link
+      const anchor = target.closest("a");
+      if (anchor) {
+        const href = anchor.getAttribute("href");
+        if (
+          href &&
+          !href.startsWith("#") &&
+          !href.startsWith("http://") &&
+          !href.startsWith("https://") &&
+          !href.startsWith("tel:") &&
+          !href.startsWith("mailto:") &&
+          !href.startsWith("javascript:")
+        ) {
+          const currentUrl = window.location.pathname + window.location.search;
+          if (href !== currentUrl) {
+            startTimeRef.current = Date.now();
+            setProgress(35);
+            setIsLoading(true);
+          }
+        }
+        return;
+      }
+
+      // Check if clicking a submit button or interactive action button
+      const button = target.closest("button");
+      if (button) {
+        if (button.type === "submit" || button.dataset.loading === "true") {
+          startTimeRef.current = Date.now();
+          setProgress(35);
+          setIsLoading(true);
+        }
+      }
+    };
+
+    document.addEventListener("click", handleDocumentClick, { capture: true });
+    return () => {
+      document.removeEventListener("click", handleDocumentClick, { capture: true });
+    };
+  }, []);
+
+  // Progress bar animation tick
+  useEffect(() => {
+    if (!isLoading) return;
+    const interval = setInterval(() => {
+      setProgress((prev) => {
+        if (prev >= 92) return prev;
+        return prev + Math.floor(Math.random() * 8) + 4;
+      });
+    }, 120);
+    return () => clearInterval(interval);
+  }, [isLoading]);
+
+  if (!isLoading && progress === 0) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-950/60 backdrop-blur-md transition-all duration-300 animate-fade-in">
-      <div className="relative flex flex-col items-center justify-center p-8 rounded-3xl bg-surface/90 border border-primary/30 shadow-2xl backdrop-blur-xl max-w-sm w-full mx-4">
-        {/* ECG / EKG SVG Animation Container */}
-        <div className="w-full h-24 relative flex items-center justify-center overflow-hidden">
-          <svg
-            className="w-full h-full text-primary"
-            viewBox="0 0 500 150"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            {/* Background Faint Grid Line */}
-            <path
-              d="M 0 75 L 500 75"
-              stroke="currentColor"
-              strokeOpacity="0.15"
-              strokeWidth="2"
-              strokeDasharray="6 6"
-            />
-
-            {/* Glowing EKG Heartbeat Pulse Path */}
-            <path
-              d="M 0 75 H 120 L 140 75 L 155 30 L 175 120 L 195 10 L 215 95 L 230 75 H 500"
-              stroke="url(#ecg-gradient)"
-              strokeWidth="5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="animate-ecg-pulse"
-            />
-
-            <defs>
-              <linearGradient id="ecg-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="var(--color-primary, #06b6d4)" stopOpacity="0.2" />
-                <stop offset="50%" stopColor="var(--color-primary-light, #22d3ee)" stopOpacity="1" />
-                <stop offset="100%" stopColor="var(--color-accent, #3b82f6)" stopOpacity="0.2" />
-              </linearGradient>
-            </defs>
-          </svg>
-
-          {/* Pulse Dot Leading Effect */}
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/20 to-transparent animate-ecg-scan pointer-events-none" />
-        </div>
-
-        {/* Loading Text */}
-        <div className="mt-4 flex items-center gap-2">
-          <span className="h-2 w-2 rounded-full bg-primary animate-ping" />
-          <p className="font-display text-sm font-bold text-text-primary tracking-wide">
-            جاري الاتصال بالنظام...
-          </p>
-        </div>
+    <>
+      {/* Top Instant Progress Bar */}
+      <div className="fixed top-0 left-0 right-0 z-[10000] pointer-events-none">
+        <div
+          className="h-1 bg-gradient-to-r from-primary via-accent to-emerald-400 shadow-[0_0_15px_rgba(0,229,255,0.9)] transition-all duration-150 ease-out"
+          style={{ width: `${progress}%`, opacity: progress > 0 ? 1 : 0 }}
+        />
       </div>
-    </div>
+
+      {/* Instant ECG Pulse Modal Overlay */}
+      {isLoading && (
+        <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-slate-950/50 backdrop-blur-md transition-all duration-200 animate-fade-in">
+          <div className="relative flex flex-col items-center justify-center p-6 sm:p-8 rounded-3xl bg-surface/95 border border-primary/30 shadow-2xl backdrop-blur-xl max-w-xs sm:max-w-sm w-full mx-4 animate-scale-up">
+            
+            {/* ECG Heartbeat SVG */}
+            <div className="w-full h-20 relative flex items-center justify-center overflow-hidden">
+              <svg
+                className="w-full h-full text-primary"
+                viewBox="0 0 500 150"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M 0 75 L 500 75"
+                  stroke="currentColor"
+                  strokeOpacity="0.15"
+                  strokeWidth="2"
+                  strokeDasharray="6 6"
+                />
+                <path
+                  d="M 0 75 H 120 L 140 75 L 155 30 L 175 120 L 195 10 L 215 95 L 230 75 H 500"
+                  stroke="url(#ecg-gradient-instant)"
+                  strokeWidth="5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="animate-ecg-pulse"
+                />
+                <defs>
+                  <linearGradient id="ecg-gradient-instant" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stopColor="var(--color-primary, #06b6d4)" stopOpacity="0.2" />
+                    <stop offset="50%" stopColor="var(--color-primary-light, #22d3ee)" stopOpacity="1" />
+                    <stop offset="100%" stopColor="var(--color-accent, #3b82f6)" stopOpacity="0.2" />
+                  </linearGradient>
+                </defs>
+              </svg>
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/20 to-transparent animate-ecg-scan pointer-events-none" />
+            </div>
+
+            {/* Loading text */}
+            <div className="mt-3 flex items-center gap-2">
+              <span className="h-2.5 w-2.5 rounded-full bg-primary animate-ping" />
+              <p className="font-display text-sm font-extrabold text-text-primary tracking-wide">
+                جاري التحميل...
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
