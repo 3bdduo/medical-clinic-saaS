@@ -56,51 +56,6 @@ function LoaderInner() {
     };
   }, []);
 
-  // 3. Instant Click Interceptor (0ms delay when user clicks ANY link or button)
-  useEffect(() => {
-    const handleDocumentClick = (e: MouseEvent) => {
-      const target = e.target as HTMLElement | null;
-      if (!target) return;
-
-      // Check if clicking an anchor link
-      const anchor = target.closest("a");
-      if (anchor) {
-        const href = anchor.getAttribute("href");
-        if (
-          href &&
-          !href.startsWith("#") &&
-          !href.startsWith("http://") &&
-          !href.startsWith("https://") &&
-          !href.startsWith("tel:") &&
-          !href.startsWith("mailto:") &&
-          !href.startsWith("javascript:")
-        ) {
-          const currentUrl = window.location.pathname + window.location.search;
-          if (href !== currentUrl) {
-            startTimeRef.current = Date.now();
-            setProgress(35);
-            setIsLoading(true);
-          }
-        }
-        return;
-      }
-
-      // Check if clicking a submit button or interactive action button
-      const button = target.closest("button");
-      if (button) {
-        if (button.type === "submit" || button.dataset.loading === "true") {
-          startTimeRef.current = Date.now();
-          setProgress(35);
-          setIsLoading(true);
-        }
-      }
-    };
-
-    document.addEventListener("click", handleDocumentClick, { capture: true });
-    return () => {
-      document.removeEventListener("click", handleDocumentClick, { capture: true });
-    };
-  }, []);
 
   // Progress bar animation tick
   useEffect(() => {

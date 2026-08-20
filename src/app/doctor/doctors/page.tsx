@@ -89,7 +89,7 @@ export default function ClinicDoctorsPage() {
       {/* Add Doctor Card */}
       <Card glass vibrant className="max-w-2xl border-primary/20 p-6 md:p-8 shadow-2xl">
         <h2 className="font-display text-lg font-bold text-text-primary mb-4 flex items-center gap-2">
-          <span>👨‍⚕️</span>
+          <span>‍️</span>
           <span>إضافة طبيب جديد للعيادة</span>
         </h2>
 
@@ -117,7 +117,7 @@ export default function ClinicDoctorsPage() {
             inputMode="tel"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
-            placeholder="مثال: 01012345678"
+            placeholder="مثال: 01000000000"
           />
 
           <Field
@@ -152,7 +152,7 @@ export default function ClinicDoctorsPage() {
             <div key={doc.id} className="flex items-center justify-between gap-4 py-4">
               <div className="flex items-center gap-3.5">
                 <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/30 to-accent/20 font-black text-primary text-base">
-                  👨‍⚕️
+                  ‍️
                 </div>
                 <div>
                   <h3 className="font-display text-base font-bold text-text-primary">

@@ -48,7 +48,7 @@ export function DoctorActivationBanner() {
               onClick={() => setIsModalOpen(true)}
               className="flex items-center gap-1.5 rounded-xl bg-warning text-surface px-3.5 py-1.5 text-xs font-extrabold shadow-sm hover:opacity-90 transition-opacity"
             >
-              <span>💬</span>
+              <span></span>
               <span>تواصل مع الدعم للتفعيل</span>
             </button>
           )}
@@ -60,7 +60,7 @@ export function DoctorActivationBanner() {
                 : "bg-warning/20 text-warning border border-warning/30"
             }`}
           >
-            {doctor.isPaid ? "مُفعل ✓" : "لم يتم التفعيل ⚠️"}
+            {doctor.isPaid ? "مُفعل " : "لم يتم التفعيل ️"}
           </span>
         </div>
       </div>

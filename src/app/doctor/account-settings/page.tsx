@@ -137,7 +137,7 @@ export default function DoctorAccountSettingsPage() {
       {/* Card 1: Personal Info & Login Details */}
       <Card glass vibrant className="p-6 md:p-8 shadow-2xl">
         <h2 className="font-display text-lg font-bold text-text-primary mb-5 flex items-center gap-2 border-b border-border/50 pb-3">
-          <span>👤</span>
+          <span></span>
           <span>البيانات الشخصية وبيانات الحساب</span>
         </h2>
 
@@ -180,7 +180,7 @@ export default function DoctorAccountSettingsPage() {
             inputMode="tel"
             value={phoneNumber}
             onChange={(e) => setPhoneNumber(e.target.value)}
-            placeholder="01012345678"
+            placeholder="01000000000"
           />
 
           {profileError && (
@@ -191,7 +191,7 @@ export default function DoctorAccountSettingsPage() {
 
           {profileSuccess && (
             <div className="sm:col-span-2 rounded-xl bg-success/10 border border-success/20 p-3 text-xs font-bold text-success animate-fade-in">
-              تم حفظ وتحديث بيانات الحساب بنجاح ✓
+              تم حفظ وتحديث بيانات الحساب بنجاح 
             </div>
           )}
 
@@ -209,7 +209,7 @@ export default function DoctorAccountSettingsPage() {
       {/* Card 2: Password Change */}
       <Card glass vibrant className="p-6 md:p-8 shadow-2xl">
         <h2 className="font-display text-lg font-bold text-text-primary mb-5 flex items-center gap-2 border-b border-border/50 pb-3">
-          <span>🔑</span>
+          <span></span>
           <span>تغيير كلمة المرور (Password)</span>
         </h2>
 
@@ -248,7 +248,7 @@ export default function DoctorAccountSettingsPage() {
 
           {passwordSuccess && (
             <div className="rounded-xl bg-success/10 border border-success/20 p-3 text-xs font-bold text-success animate-fade-in">
-              تم تحديث كلمة المرور بنجاح ✓
+              تم تحديث كلمة المرور بنجاح 
             </div>
           )}
 

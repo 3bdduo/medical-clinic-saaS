@@ -71,7 +71,7 @@ export default function AdminLoginPage() {
             <Logo size="lg" href={null} />
           </div>
           <div className="inline-flex items-center gap-2 rounded-full border border-accent/30 bg-accent/10 px-3 py-1 text-xs font-bold text-accent mb-2">
-            <span>🛡️</span>
+            <span>️</span>
             <span>بوابة الإدارة والمشرفين</span>
           </div>
           <h1 className="font-display text-2xl font-extrabold text-text-primary">
@@ -126,10 +126,10 @@ export default function AdminLoginPage() {
 
         <div className="mt-6 flex items-center justify-between text-sm pt-4 border-t border-border/60">
           <Link href="/login" className="font-medium text-primary hover:underline transition-colors">
-            دخول الأطباء والمرضى 👤
+            دخول الأطباء والمرضى 
           </Link>
           <Link href="/" className="font-medium text-text-secondary hover:text-primary transition-colors">
-            الصفحة الرئيسية 🏠
+            الصفحة الرئيسية 
           </Link>
         </div>
       </Card>

@@ -17,22 +17,26 @@ export function RequireRole({
 
   useEffect(() => {
     if (isLoading) return;
-    if (!isAuthenticated) {
-      router.replace("/login");
-      return;
-    }
-    if (currentRole !== role) {
-      router.replace("/login");
+    if (!isAuthenticated || currentRole !== role) {
+      // Redirect admins to admin login, others to generic login
+      router.replace(role === "Admin" ? "/admin-login" : "/login");
     }
   }, [isLoading, isAuthenticated, currentRole, role, router]);
 
-  if (isLoading || !isAuthenticated || currentRole !== role) {
+  // Still checking auth — show a full-screen spinner so user never sees black
+  if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center text-sm text-text-secondary">
-        جارٍ التحقق من الجلسة...
+      <div className="flex min-h-screen items-center justify-center bg-[#090D12]">
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-10 w-10 rounded-full border-4 border-primary/30 border-t-primary animate-spin" />
+          <p className="text-sm font-medium text-text-secondary">جارٍ التحقق من الجلسة...</p>
+        </div>
       </div>
     );
   }
+
+  // Not authed — render nothing while redirect fires
+  if (!isAuthenticated || currentRole !== role) return null;
 
   return <>{children}</>;
 }

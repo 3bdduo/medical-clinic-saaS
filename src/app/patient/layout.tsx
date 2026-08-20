@@ -2,13 +2,14 @@
 
 import { RequireRole } from "@/components/RequireRole";
 import { DashboardShell } from "@/components/layout/DashboardShell";
-import { IconDashboard, IconCalendar, IconRecord, IconBell } from "@/components/ui/icons";
+import { IconDashboard, IconCalendar, IconRecord, IconBell, IconUsers } from "@/components/ui/icons";
 
 const NAV_ITEMS = [
   { href: "/patient", label: "الرئيسية", icon: <IconDashboard /> },
   { href: "/patient/appointments", label: "مواعيدي", icon: <IconCalendar /> },
   { href: "/patient/records", label: "سجلاتي الطبية", icon: <IconRecord /> },
   { href: "/patient/notifications", label: "الإشعارات", icon: <IconBell /> },
+  { href: "/patient/profile", label: "ملفي الشخصي", icon: <IconUsers /> },
 ];
 
 export default function PatientLayout({ children }: { children: React.ReactNode }) {

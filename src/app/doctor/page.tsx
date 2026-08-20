@@ -96,7 +96,7 @@ export default function DoctorDashboardPage() {
     return (
       <Card className="mx-auto max-w-xl text-center animate-fade-in p-6 sm:p-8 border-warning/30">
         <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-warning/15 text-warning text-2xl font-bold">
-          ⚠️
+          ️
         </div>
         <h2 className="font-display text-xl font-extrabold text-text-primary">
           الحساب غير مفعل حالياً (لم يتم التفعيل)
@@ -112,11 +112,11 @@ export default function DoctorDashboardPage() {
         <div className="mt-6 flex flex-wrap justify-center gap-3">
           <Link href="/doctor/clinic">
             <Button variant="vibrant">
-              بيانات العيادة 🏥
+              بيانات العيادة 
             </Button>
           </Link>
           <Button variant="secondary" onClick={() => window.location.reload()}>
-            إعادة الفحص 🔄
+            إعادة الفحص 
           </Button>
         </div>
       </Card>

@@ -78,7 +78,7 @@ function Section({
             onClick={onEdit}
             className="flex items-center gap-1.5 rounded-xl bg-primary/10 hover:bg-primary/20 px-3 py-1.5 text-xs font-bold text-primary transition-all duration-200"
           >
-            <span>✏️</span>
+            <span>️</span>
             <span>تعديل</span>
           </button>
         ) : (
@@ -99,7 +99,7 @@ function Section({
               {saving ? (
                 <><span className="h-3 w-3 rounded-full border-2 border-surface/30 border-t-surface animate-spin" /><span>حفظ...</span></>
               ) : (
-                <><span>💾</span><span>حفظ التغييرات</span></>
+                <><span></span><span>حفظ التغييرات</span></>
               )}
             </button>
           </div>
@@ -205,7 +205,7 @@ export default function DoctorClinicPage() {
       }
       setForm({ ...draft });
       setEditingSection(null);
-      setGlobalSuccess("تم حفظ بيانات العيادة بنجاح ✓");
+      setGlobalSuccess("تم حفظ بيانات العيادة بنجاح ");
       setTimeout(() => setGlobalSuccess(null), 4000);
     } catch (err) {
       const msg = err instanceof ApiError ? err.message : "تعذّر حفظ البيانات";
@@ -271,7 +271,7 @@ export default function DoctorClinicPage() {
               : "حساب الطبيب غير مُفعل حالياً (لم يتم التفعيل بعد من إدارة المنصة)"}
           </div>
           <span className={`rounded-full px-3 py-1 text-xs font-extrabold ${doctor.isPaid ? "bg-success/20 text-success" : "bg-warning/20 text-warning"}`}>
-            {doctor.isPaid ? "مُفعل ✓" : "لم يتم التفعيل ⚠️"}
+            {doctor.isPaid ? "مُفعل " : "لم يتم التفعيل ️"}
           </span>
         </div>
       )}
@@ -295,7 +295,7 @@ export default function DoctorClinicPage() {
                   : "text-text-secondary hover:text-text-primary hover:bg-surface-raised"
               }`}
             >
-              <span>{tab === "private" ? "🔒" : "🌐"}</span>
+              <span>{tab === "private" ? "" : ""}</span>
               <span>{tab === "private" ? "بيانات العيادة (خاص)" : "معاينة المرضى (عام)"}</span>
             </button>
           ))}
@@ -310,7 +310,7 @@ export default function DoctorClinicPage() {
       )}
       {sectionError && (
         <div className="rounded-2xl bg-danger/10 border border-danger/30 px-4 py-3 text-sm font-bold text-danger animate-fade-in flex items-start gap-2">
-          <span>⚠️</span><span>{sectionError}</span>
+          <span>️</span><span>{sectionError}</span>
         </div>
       )}
 
@@ -320,14 +320,14 @@ export default function DoctorClinicPage() {
 
           {!exists && (
             <div className="rounded-2xl border border-warning/30 bg-warning/10 px-4 py-3 text-sm font-medium text-warning">
-              📋 لم يتم إنشاء بيانات العيادة بعد — أكمل الحقول أدناه ثم اضغط حفظ لتظهر للمرضى
+               لم يتم إنشاء بيانات العيادة بعد — أكمل الحقول أدناه ثم اضغط حفظ لتظهر للمرضى
             </div>
           )}
 
           {/* ── Section 1: Basic Info ──────────────────────── */}
           <Section
             title="المعلومات الأساسية"
-            icon="🏥"
+            icon=""
             editing={isEditing("basic")}
             saving={saving}
             onEdit={() => startEdit("basic")}
@@ -368,7 +368,7 @@ export default function DoctorClinicPage() {
           {/* ── Section 2: Location ───────────────────────── */}
           <Section
             title="الموقع والعنوان"
-            icon="📍"
+            icon=""
             editing={isEditing("location")}
             saving={saving}
             onEdit={() => startEdit("location")}
@@ -442,7 +442,7 @@ export default function DoctorClinicPage() {
           {/* ── Section 3: Contact ────────────────────────── */}
           <Section
             title="بيانات التواصل"
-            icon="📞"
+            icon=""
             editing={isEditing("contact")}
             saving={saving}
             onEdit={() => startEdit("contact")}
@@ -461,7 +461,7 @@ export default function DoctorClinicPage() {
               inputMode="tel"
               value={draft.phoneNumber}
               onChange={(e) => updateDraft("phoneNumber", e.target.value)}
-              placeholder="مثال: 01012345678"
+              placeholder="مثال: 01000000000"
             />
             <Field
               label="البريد الإلكتروني *"
@@ -486,7 +486,7 @@ export default function DoctorClinicPage() {
                   await createClinic(draft);
                   setForm({ ...draft });
                   setExists(true);
-                  setGlobalSuccess("تم إنشاء بيانات العيادة بنجاح ✓");
+                  setGlobalSuccess("تم إنشاء بيانات العيادة بنجاح ");
                   setTimeout(() => setGlobalSuccess(null), 4000);
                 } catch (err) {
                   setSectionError(err instanceof ApiError ? err.message : "تعذّر إنشاء العيادة");
@@ -495,7 +495,7 @@ export default function DoctorClinicPage() {
                 }
               }}
             >
-              {saving ? "جارٍ الحفظ..." : "💾 إنشاء وحفظ بيانات العيادة"}
+              {saving ? "جارٍ الحفظ..." : " إنشاء وحفظ بيانات العيادة"}
             </Button>
           )}
         </div>
@@ -507,7 +507,7 @@ export default function DoctorClinicPage() {
           <div className="flex items-center justify-between border-b border-border/50 pb-4 mb-6">
             <div>
               <h2 className="font-display text-xl font-extrabold text-text-primary flex items-center gap-2">
-                <span>🌐</span>
+                <span></span>
                 <span>بطاقة العيادة المعروضة للمرضى</span>
               </h2>
               <p className="mt-1 text-xs text-text-secondary">
@@ -529,7 +529,7 @@ export default function DoctorClinicPage() {
                   {form.name || "اسم العيادة الطبية"}
                 </h3>
                 <p className="text-xs text-text-secondary mt-1">
-                  📍 {form.governorate || "المحافظة"}، {form.city || "المدينة"}
+                   {form.governorate || "المحافظة"}، {form.city || "المدينة"}
                   {form.street ? ` — ${form.street}` : ""}
                 </p>
               </div>
@@ -550,14 +550,14 @@ export default function DoctorClinicPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-border/50">
               <div className="flex items-center gap-3 rounded-2xl bg-surface p-4 border border-border/60">
-                <span className="text-xl">📱</span>
+                <span className="text-xl"></span>
                 <div>
                   <p className="text-[11px] font-extrabold text-text-secondary">رقم الاستعلام والحجز</p>
                   <p className="text-sm font-bold text-text-primary" dir="ltr">{form.phoneNumber || "—"}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3 rounded-2xl bg-surface p-4 border border-border/60">
-                <span className="text-xl">✉️</span>
+                <span className="text-xl">️</span>
                 <div>
                   <p className="text-[11px] font-extrabold text-text-secondary">البريد الإلكتروني</p>
                   <p className="text-sm font-bold text-text-primary">{form.email || "—"}</p>
@@ -573,12 +573,12 @@ export default function DoctorClinicPage() {
                 onClick={() => setActiveTab("private")}
                 className="font-bold flex items-center gap-2"
               >
-                <span>✏️</span>
+                <span>️</span>
                 <span>تعديل بيانات العيادة</span>
               </Button>
               <Link href="/clinics">
                 <Button variant="vibrant" size="lg" className="font-bold shadow-glow-cyan">
-                  احجز موعدك الآن في هذه العيادة 🗓️
+                  احجز موعدك الآن في هذه العيادة ️
                 </Button>
               </Link>
             </div>

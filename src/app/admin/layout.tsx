@@ -8,6 +8,7 @@ const NAV_ITEMS = [
   { href: "/admin", label: "لوحة التحكم", icon: <IconDashboard /> },
   { href: "/admin/doctors", label: "الأطباء", icon: <IconUsers /> },
   { href: "/admin/clinics", label: "العيادات", icon: <IconBuilding /> },
+  { href: "/admin/profile", label: "البروفايل الشخصي", icon: <IconUsers /> },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {

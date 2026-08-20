@@ -35,7 +35,7 @@ export function validateEgyptianPhone(phone: string): string | null {
   // Normalizes 010... or +2010... or 2010...
   const egyptPhoneRegex = /^(01[0125]\d{8}|\+?201[0125]\d{8})$/;
   if (!egyptPhoneRegex.test(clean)) {
-    return "يرجى إدخال رقم هاتف مصري صحيح (مثال: 01012345678 أو 011/012/015)";
+    return "يرجى إدخال رقم هاتف مصري صحيح (مثال: 01000000000 أو 011/012/015)";
   }
   return null;
 }

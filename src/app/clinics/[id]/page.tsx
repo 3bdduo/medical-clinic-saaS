@@ -15,8 +15,54 @@ export default function ClinicDetailsPage({ params }: { params: { id: string } }
   const [clinic, setClinic] = useState<Clinic | null>(null);
   const [loading, setLoading] = useState(true);
   const [date, setDate] = useState("");
+  const [selectedSlot, setSelectedSlot] = useState("");
+  const [availableSlots, setAvailableSlots] = useState<string[]>([]);
   const [bookingLoading, setBookingLoading] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+  // Simulated logic to generate slots for a chosen date
+  useEffect(() => {
+    if (!date || !clinic) {
+      setAvailableSlots([]);
+      setSelectedSlot("");
+      return;
+    }
+
+    const dayOfWeek = new Date(date)
+      .toLocaleDateString("en-US", { weekday: "long" })
+      .toLowerCase();
+
+    const workingDay = clinic.workingDays.find((wd) => wd.day === dayOfWeek);
+
+    if (!workingDay) {
+      setAvailableSlots([]); // No working hours this day
+      setSelectedSlot("");
+      return;
+    }
+
+    // Generate slots every 30 mins between from and to
+    const slots = [];
+    const parseTime = (t: string) => {
+      const [h, m] = t.split(":").map(Number);
+      return h * 60 + (m || 0);
+    };
+    
+    let currentMin = parseTime(workingDay.from);
+    const endMin = parseTime(workingDay.to);
+    
+    // Fallback slot duration is 30 mins
+    const slotDuration = (clinic as any).slotDuration || 30;
+
+    while (currentMin + slotDuration <= endMin) {
+      const h = Math.floor(currentMin / 60).toString().padStart(2, "0");
+      const m = (currentMin % 60).toString().padStart(2, "0");
+      slots.push(`${h}:${m}`);
+      currentMin += slotDuration;
+    }
+
+    setAvailableSlots(slots);
+    setSelectedSlot("");
+  }, [date, clinic]);
 
   useEffect(() => {
     async function load() {
@@ -58,9 +104,11 @@ export default function ClinicDetailsPage({ params }: { params: { id: string } }
       await createAppointmentByPatient({
         doctorId,
         date,
+        startTime: selectedSlot,
       });
       setMessage({ type: "success", text: "تم حجز الموعد بنجاح! سيتم مراجعته وتأكيده قريباً." });
       setDate("");
+      setSelectedSlot("");
     } catch (err: any) {
       setMessage({ type: "error", text: err.message || "حدث خطأ أثناء الحجز، يرجى المحاولة لاحقاً." });
     } finally {
@@ -160,6 +208,36 @@ export default function ClinicDetailsPage({ params }: { params: { id: string } }
               />
             </div>
 
+            {date && (
+              <div>
+                <label className="mb-1.5 block text-sm font-semibold text-text-primary">
+                  الساعة
+                </label>
+                {availableSlots.length > 0 ? (
+                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                    {availableSlots.map((slot) => (
+                      <button
+                        key={slot}
+                        type="button"
+                        onClick={() => setSelectedSlot(slot)}
+                        className={`rounded-xl border px-3 py-2 text-sm font-bold transition-all ${
+                          selectedSlot === slot
+                            ? "bg-primary text-surface border-primary shadow-glow-cyan"
+                            : "border-border/60 hover:border-primary/40 text-text-primary bg-surface-raised"
+                        }`}
+                      >
+                        {slot}
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="rounded-xl bg-danger/10 p-3 text-sm text-danger border border-danger/20 text-center">
+                    لا توجد مواعيد متاحة في هذا اليوم. يرجى اختيار يوم آخر.
+                  </div>
+                )}
+              </div>
+            )}
+
             {message && (
               <div className={`rounded-xl px-4 py-3 text-sm font-medium animate-fade-in-slow ${
                 message.type === "success" ? "bg-success/10 text-success border border-success/20" : "bg-danger/10 text-danger border border-danger/20"
@@ -174,7 +252,13 @@ export default function ClinicDetailsPage({ params }: { params: { id: string } }
                   تسجيل الدخول للحجز
                 </Button>
               ) : (
-                <Button type="submit" variant="vibrant" className="w-full" loading={bookingLoading}>
+                <Button 
+                  type="submit" 
+                  variant="vibrant" 
+                  className="w-full shadow-glow-cyan" 
+                  loading={bookingLoading}
+                  disabled={!!date && availableSlots.length > 0 && !selectedSlot}
+                >
                   تأكيد الحجز
                 </Button>
               )}

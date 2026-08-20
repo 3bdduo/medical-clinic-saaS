@@ -148,7 +148,7 @@ export default function PatientAppointmentsPage() {
       {/* Booking Form Card */}
       <Card glass vibrant className="border-primary/20 shadow-xl p-6 sm:p-8">
         <h2 className="font-display text-lg font-bold text-text-primary mb-4 flex items-center gap-2">
-          <span>📅</span>
+          <span></span>
           <span>حجز موعد كشف جديد</span>
         </h2>
 
@@ -214,11 +214,11 @@ export default function PatientAppointmentsPage() {
       <Card className="p-6">
         <h2 className="font-display text-lg font-bold text-text-primary mb-4 flex items-center justify-between">
           <span className="flex items-center gap-2">
-            <span>📋</span>
+            <span></span>
             <span>قائمة مواعيدي الطبية ({appointments.length})</span>
           </span>
           <Button variant="ghost" size="sm" onClick={loadData}>
-            تحديث القائمة 🔄
+            تحديث القائمة 
           </Button>
         </h2>
 

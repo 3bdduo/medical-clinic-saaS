@@ -192,6 +192,7 @@ export interface CreateClinicPayload {
 export interface CreateAppointmentByPatientPayload {
   doctorId: string;
   date: string; // YYYY-MM-DD
+  startTime?: string;
 }
 
 // Path is /appointment/doctor/:patientId — the patient is identified in the
@@ -200,6 +201,7 @@ export interface CreateAppointmentByPatientPayload {
 export interface CreateAppointmentByDoctorPayload {
   doctorId: string;
   date: string;
+  startTime?: string;
 }
 
 // Confirmed against the collection: the only field ever shown in the saved

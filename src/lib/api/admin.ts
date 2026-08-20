@@ -59,6 +59,14 @@ export function renewDoctorSubscription(
   );
 }
 
+// POST /admin/doctors (Create doctor manually by admin)
+export function createDoctorByAdmin(payload: any) {
+  return apiFetch<ApiEnvelope<{ doctor: Doctor }>>("/admin/doctors", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
 // DELETE /admin/doctors/:id
 export function deleteDoctor(id: string) {
   return apiFetch<ApiEnvelope<null>>(`/admin/doctors/${id}`, {

@@ -116,7 +116,7 @@ export default function LandingPage() {
             <div className="mt-8 flex flex-col gap-3 pt-6 border-t border-border/60">
               <Link href="/clinics" className="w-full">
                 <Button variant="vibrant" size="lg" className="w-full justify-center text-base font-bold shadow-glow-emerald">
-                  تصفح العيادات والحجز الآن 🗓️
+                  تصفح العيادات والحجز الآن ️
                 </Button>
               </Link>
               <Link href="/patient" className="w-full">

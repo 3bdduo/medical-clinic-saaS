@@ -127,7 +127,7 @@ export default function RegisterDoctorPage() {
             value={form.nationalId}
             onChange={(e) => update("nationalId", e.target.value)}
             error={fieldErrors.nationalId}
-            placeholder="مثال: 29805141501234"
+            placeholder="مثال: 00000000000000"
             className="sm:col-span-2"
           />
           <Field
@@ -147,7 +147,7 @@ export default function RegisterDoctorPage() {
             value={form.phoneNumber}
             onChange={(e) => update("phoneNumber", e.target.value)}
             error={fieldErrors.phoneNumber}
-            placeholder="مثال: 01012345678"
+            placeholder="مثال: 01000000000"
           />
           <Field
             label="كلمة المرور"

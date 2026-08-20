@@ -117,7 +117,7 @@ export function Logo({
               }}
               className="flex-1 rounded-xl bg-gradient-to-r from-primary via-cyan-500 to-accent py-2.5 text-sm font-bold text-slate-950 shadow-glow-cyan hover:opacity-95 transition-opacity"
             >
-              الصفحة الرئيسية 🏠
+              الصفحة الرئيسية 
             </button>
             <button
               onClick={() => setIsModalOpen(false)}

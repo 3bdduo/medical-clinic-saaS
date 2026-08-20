@@ -5,10 +5,12 @@ import { DoctorActivationBanner } from "@/components/DoctorActivationBanner";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { CustomTimePicker } from "@/components/ui/CustomTimePicker";
+import { getMyClinic, updateMyClinic } from "@/lib/api/doctor";
+import type { WorkingDay } from "@/types/api";
 
 interface DayConfig {
   dayName: string;
-  dateStr: string;
+  dayKey: WorkingDay["day"];
   isOpen: boolean;
   mode: "queue" | "time";
   limitEnabled: boolean;
@@ -20,99 +22,29 @@ interface DayConfig {
   bookedCount: number;
 }
 
-const DEFAULT_DAYS: DayConfig[] = [
-  {
-    dayName: "الخميس",
-    dateStr: "2026-08-20",
-    isOpen: true,
-    mode: "queue",
-    limitEnabled: true,
-    maxLimit: 20,
-    fromTime: "16:30",
-    toTime: "21:00",
-    slotDuration: 30,
-    waitingCapacity: 5,
-    bookedCount: 0,
-  },
-  {
-    dayName: "الجمعة",
-    dateStr: "2026-08-21",
-    isOpen: false,
-    mode: "queue",
-    limitEnabled: true,
-    maxLimit: 0,
-    fromTime: "16:30",
-    toTime: "21:00",
-    slotDuration: 30,
-    waitingCapacity: 5,
-    bookedCount: 0,
-  },
-  {
-    dayName: "السبت",
-    dateStr: "2026-08-22",
-    isOpen: true,
-    mode: "time",
-    limitEnabled: true,
-    maxLimit: 25,
-    fromTime: "10:00",
-    toTime: "18:00",
-    slotDuration: 30,
-    waitingCapacity: 5,
-    bookedCount: 0,
-  },
-  {
-    dayName: "الأحد",
-    dateStr: "2026-08-23",
-    isOpen: true,
-    mode: "queue",
-    limitEnabled: true,
-    maxLimit: 20,
-    fromTime: "10:00",
-    toTime: "18:00",
-    slotDuration: 30,
-    waitingCapacity: 5,
-    bookedCount: 0,
-  },
-  {
-    dayName: "الإثنين",
-    dateStr: "2026-08-24",
-    isOpen: true,
-    mode: "time",
-    limitEnabled: true,
-    maxLimit: 20,
-    fromTime: "11:00",
-    toTime: "19:00",
-    slotDuration: 20,
-    waitingCapacity: 3,
-    bookedCount: 0,
-  },
-  {
-    dayName: "الثلاثاء",
-    dateStr: "2026-08-25",
-    isOpen: true,
-    mode: "queue",
-    limitEnabled: true,
-    maxLimit: 20,
-    fromTime: "10:00",
-    toTime: "18:00",
-    slotDuration: 30,
-    waitingCapacity: 5,
-    bookedCount: 0,
-  },
-  {
-    dayName: "الأربعاء",
-    dateStr: "2026-08-26",
-    isOpen: true,
-    mode: "queue",
-    limitEnabled: true,
-    maxLimit: 30,
-    fromTime: "12:00",
-    toTime: "20:00",
-    slotDuration: 30,
-    waitingCapacity: 5,
-    bookedCount: 0,
-  },
-];
+const ARABIC_DAYS: Record<WorkingDay["day"], string> = {
+  saturday: "السبت",
+  sunday: "الأحد",
+  monday: "الإثنين",
+  tuesday: "الثلاثاء",
+  wednesday: "الأربعاء",
+  thursday: "الخميس",
+  friday: "الجمعة",
+};
+
+const DEFAULT_DAYS: DayConfig[] = (Object.keys(ARABIC_DAYS) as WorkingDay["day"][]).map((dayKey) => ({
+  dayName: ARABIC_DAYS[dayKey],
+  dayKey,
+  isOpen: true,
+  mode: "queue",
+  limitEnabled: true,
+  maxLimit: 20,
+  fromTime: "10:00",
+  toTime: "18:00",
+  slotDuration: 30,
+  waitingCapacity: 5,
+  bookedCount: 0,
+}));
 
 export default function BookingSettingsPage() {
   const [globalBookingOpen, setGlobalBookingOpen] = useState(true);
@@ -120,25 +52,52 @@ export default function BookingSettingsPage() {
   const [savedMsgIndex, setSavedMsgIndex] = useState<number | null>(null);
 
   useEffect(() => {
-    const saved = localStorage.getItem("clinic_booking_config_v3");
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        setGlobalBookingOpen(parsed.globalBookingOpen ?? true);
-        if (parsed.days) setDays(parsed.days);
-      } catch (e) {
-        console.error(e);
-      }
-    }
+    getMyClinic()
+      .then((res) => {
+        const clinic = res.data;
+        if (clinic && clinic.workingDays) {
+          const mapped = DEFAULT_DAYS.map((defDay) => {
+            const serverDay = clinic.workingDays.find((wd) => wd.day === defDay.dayKey);
+            if (serverDay) {
+              return {
+                ...defDay,
+                isOpen: true,
+                fromTime: serverDay.from || defDay.fromTime,
+                toTime: serverDay.to || defDay.toTime,
+              };
+            } else {
+              return {
+                ...defDay,
+                isOpen: false,
+              };
+            }
+          });
+          setDays(mapped);
+        }
+      })
+      .catch((err) => console.error("Failed to load clinic config:", err));
   }, []);
+
+  async function saveConfigToBackend(updatedDays: DayConfig[]) {
+    const workingDaysPayload: WorkingDay[] = updatedDays
+      .filter((d) => d.isOpen)
+      .map((d) => ({
+        day: d.dayKey,
+        from: d.fromTime,
+        to: d.toTime,
+      }));
+
+    try {
+      await updateMyClinic({ workingDays: workingDaysPayload });
+    } catch (err) {
+      console.error("Failed to update workingDays in backend:", err);
+    }
+  }
 
   function saveConfig(updatedDays: DayConfig[], globalState: boolean) {
     setDays(updatedDays);
     setGlobalBookingOpen(globalState);
-    localStorage.setItem(
-      "clinic_booking_config_v3",
-      JSON.stringify({ globalBookingOpen: globalState, days: updatedDays })
-    );
+    saveConfigToBackend(updatedDays);
   }
 
   function updateDay(index: number, patch: Partial<DayConfig>) {
@@ -148,6 +107,7 @@ export default function BookingSettingsPage() {
   }
 
   function handleSaveClick(index: number) {
+    saveConfigToBackend(days);
     setSavedMsgIndex(index);
     setTimeout(() => setSavedMsgIndex(null), 2500);
   }
@@ -167,7 +127,7 @@ export default function BookingSettingsPage() {
           إعدادات الحجز
         </h1>
         <p className="text-sm text-text-secondary">
-          تحكم في نوع وعدد الحجوزات لكل يوم على حده متوافقة مع ألوان ونظام العيادة
+          تعديل أيام العمل ومواعيد العمل الخاصة بالعيادة
         </p>
       </div>
 
@@ -176,31 +136,19 @@ export default function BookingSettingsPage() {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-5">
           <div className="flex items-center gap-4">
             <div
-              className={`flex h-14 w-14 items-center justify-center rounded-2xl text-2xl shadow-inner ${
-                globalBookingOpen ? "bg-success/20 text-success" : "bg-danger/20 text-danger"
-              }`}
+              className={`flex h-14 w-14 items-center justify-center rounded-2xl text-2xl shadow-inner bg-success/20 text-success`}
             >
-              {globalBookingOpen ? "🔓" : "🔒"}
+              
             </div>
             <div>
               <h2 className="font-display text-lg font-extrabold text-text-primary">
-                حالة الحجز الكلية: {globalBookingOpen ? "مفتوح ويستقبل حجوزات" : "مغلق عموماً"}
+                حالة جدول العيادة: مفتوح لتلقي الحجوزات
               </h2>
               <p className="text-xs text-text-secondary mt-1">
-                {globalBookingOpen
-                  ? "الحجز متاح حالياً ويتبع جدول مواعيد كل يوم أدناه"
-                  : "تم إيقاف استقبال جميع الحجوزات مؤقتاً في العيادة"}
+                تعديل الأوقات أدناه سيقوم بتحديث جدول حجز المرضى فورياً
               </p>
             </div>
           </div>
-
-          <Button
-            variant={globalBookingOpen ? "danger" : "vibrant"}
-            onClick={toggleGlobalState}
-            className="font-bold shadow-md px-6 py-3"
-          >
-            {globalBookingOpen ? "🔒 قفل الحجز عموماً" : "🔓 فتح الحجز للعيادة"}
-          </Button>
         </div>
       </Card>
 
@@ -208,7 +156,7 @@ export default function BookingSettingsPage() {
       <div className="flex flex-col gap-6">
         {days.map((day, idx) => (
           <Card
-            key={day.dayName}
+            key={day.dayKey}
             glass
             vibrant
             className={`p-6 md:p-8 transition-all duration-300 ${
@@ -219,167 +167,68 @@ export default function BookingSettingsPage() {
             <div className="flex items-start justify-between border-b border-border/50 pb-5 mb-6">
               <div>
                 <h3 className="font-display text-xl font-extrabold text-text-primary">
-                  {day.dayName} ({day.dateStr})
+                  {day.dayName}
                 </h3>
                 <p className="text-xs text-text-secondary mt-1">
-                  حجوزات: {day.bookedCount}
+                  حالة اليوم: {day.isOpen ? "🟢 عيادة تعمل" : " مغلق"}
                 </p>
-              </div>
-
-              <div className="text-primary font-extrabold text-sm bg-primary-soft border border-primary/30 px-4 py-1.5 rounded-2xl">
-                {day.mode === "queue"
-                  ? `بالدور (${day.bookedCount} محجوز)`
-                  : `بالساعة (${day.bookedCount} محجوز)`}
               </div>
             </div>
 
             {/* Form Body */}
-            <div className="flex flex-col gap-6">
-              {/* Mode Selection Pill Row */}
-              <div className="flex flex-col gap-2">
-                <label className="text-xs font-extrabold text-text-secondary">
-                  طريقة الحجز لهذا اليوم:
-                </label>
-                <div className="flex items-center gap-3">
-                  <button
-                    type="button"
-                    onClick={() => updateDay(idx, { mode: "queue" })}
-                    className={`rounded-full border px-5 py-2 text-xs font-bold transition-all ${
-                      day.mode === "queue"
-                        ? "border-primary bg-primary text-surface shadow-glow-cyan"
-                        : "border-border/80 bg-surface-raised text-text-secondary hover:border-border"
-                    }`}
-                  >
-                    بالدور (رقم حجز عادي)
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => updateDay(idx, { mode: "time" })}
-                    className={`rounded-full border px-5 py-2 text-xs font-bold transition-all ${
-                      day.mode === "time"
-                        ? "border-primary bg-primary text-surface shadow-glow-cyan"
-                        : "border-border/80 bg-surface-raised text-text-secondary hover:border-border"
-                    }`}
-                  >
-                    بالساعة (تحديد مواقيت)
-                  </button>
-                </div>
-              </div>
-
-              {/* MODE 1: QUEUE (بالدور) */}
-              {day.mode === "queue" && (
-                <div className="flex flex-col gap-3">
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs font-extrabold text-text-secondary">
-                      حد الحجوزات لهذا اليوم:
-                    </label>
-                    <label className="flex items-center gap-2 text-xs font-bold text-text-primary cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={day.limitEnabled}
-                        onChange={(e) => updateDay(idx, { limitEnabled: e.target.checked })}
-                        className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
-                      />
-                      <span>تفعيل الحد</span>
-                    </label>
-                  </div>
-
-                  <input
-                    type="number"
-                    disabled={!day.limitEnabled}
-                    value={day.maxLimit === 0 ? "" : day.maxLimit}
-                    placeholder="0"
-                    onChange={(e) => {
-                      const val = e.target.value === "" ? 0 : Number(e.target.value);
-                      updateDay(idx, { maxLimit: val });
-                    }}
-                    className="w-full rounded-2xl border border-border/80 bg-surface-raised px-5 py-3.5 text-center text-lg font-black text-text-primary outline-none transition-all focus:border-primary disabled:opacity-50"
+            {day.isOpen ? (
+              <div className="flex flex-col gap-6">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <CustomTimePicker
+                    label="وقت بدء العمل:"
+                    value={day.fromTime}
+                    onChange={(val) => updateDay(idx, { fromTime: val })}
+                  />
+                  <CustomTimePicker
+                    label="وقت انتهاء العمل:"
+                    value={day.toTime}
+                    onChange={(val) => updateDay(idx, { toTime: val })}
                   />
                 </div>
-              )}
 
-              {/* MODE 2: TIME SLOTS (بالساعة) */}
-              {day.mode === "time" && (
-                <div className="flex flex-col gap-5">
-                  {/* Row 1: Start & End Times */}
-                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    <CustomTimePicker
-                      label="وقت بدء العمل:"
-                      value={day.fromTime}
-                      onChange={(val) => updateDay(idx, { fromTime: val })}
-                    />
-                    <CustomTimePicker
-                      label="وقت انتهاء العمل:"
-                      value={day.toTime}
-                      onChange={(val) => updateDay(idx, { toTime: val })}
-                    />
-                  </div>
+                <div className="flex flex-col gap-3 mt-4 pt-4 border-t border-border/40">
+                  <Button
+                    variant="vibrant"
+                    size="lg"
+                    onClick={() => handleSaveClick(idx)}
+                    className="w-full justify-center text-base font-bold shadow-glow-cyan"
+                  >
+                    حفظ التغييرات
+                  </Button>
 
-                  {/* Row 2: Duration & Capacity */}
-                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    <div>
-                      <label className="block text-xs font-extrabold text-text-secondary mb-2">
-                        مدة الموعد (دقائق):
-                      </label>
-                      <input
-                        type="number"
-                        placeholder="مثال: 30"
-                        value={day.slotDuration === 0 ? "" : day.slotDuration}
-                        onChange={(e) => {
-                          const val = e.target.value === "" ? 0 : Number(e.target.value);
-                          updateDay(idx, { slotDuration: val });
-                        }}
-                        className="w-full rounded-2xl border border-border/80 bg-surface-raised px-5 py-3.5 text-center text-sm font-bold text-text-primary outline-none focus:border-primary"
-                      />
-                    </div>
+                  <Button
+                    variant="danger"
+                    size="lg"
+                    onClick={() => updateDay(idx, { isOpen: false })}
+                    className="w-full justify-center text-base font-bold"
+                  >
+                    تعطيل العمل في هذا اليوم
+                  </Button>
 
-                    <div>
-                      <label className="block text-xs font-extrabold text-text-secondary mb-2">
-                        سعة الانتظار:
-                      </label>
-                      <input
-                        type="number"
-                        placeholder="مثال: 5"
-                        value={day.waitingCapacity === 0 ? "" : day.waitingCapacity}
-                        onChange={(e) => {
-                          const val = e.target.value === "" ? 0 : Number(e.target.value);
-                          updateDay(idx, { waitingCapacity: val });
-                        }}
-                        className="w-full rounded-2xl border border-border/80 bg-surface-raised px-5 py-3.5 text-center text-sm font-bold text-text-primary outline-none focus:border-primary"
-                      />
-                    </div>
-                  </div>
+                  {savedMsgIndex === idx && (
+                    <p className="text-center text-xs font-extrabold text-success animate-fade-in mt-1">
+                      تم حفظ إعدادات اليوم بنجاح 
+                    </p>
+                  )}
                 </div>
-              )}
-
-              {/* Action Buttons Stack matching theme */}
-              <div className="flex flex-col gap-3 mt-4 pt-4 border-t border-border/40">
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-6 text-center">
+                <p className="text-sm text-text-secondary mb-4">هذا اليوم معطل حالياً ولا يستقبل حجوزات</p>
                 <Button
                   variant="vibrant"
-                  size="lg"
-                  onClick={() => handleSaveClick(idx)}
-                  className="w-full justify-center text-base font-bold shadow-glow-cyan"
+                  onClick={() => updateDay(idx, { isOpen: true })}
+                  className="shadow-glow-cyan"
                 >
-                  حفظ الإعدادات
+                  تفعيل اليوم وفتح الحجز 
                 </Button>
-
-                <Button
-                  variant={day.isOpen ? "danger" : "secondary"}
-                  size="lg"
-                  onClick={() => updateDay(idx, { isOpen: !day.isOpen })}
-                  className="w-full justify-center text-base font-bold"
-                >
-                  {day.isOpen ? "قفل اليوم" : "فتح اليوم"}
-                </Button>
-
-                {savedMsgIndex === idx && (
-                  <p className="text-center text-xs font-extrabold text-success animate-fade-in mt-1">
-                    تم حفظ الإعدادات لليوم بنجاح ✓
-                  </p>
-                )}
               </div>
-            </div>
+            )}
           </Card>
         ))}
       </div>

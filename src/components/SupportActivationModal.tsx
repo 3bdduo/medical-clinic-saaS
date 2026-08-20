@@ -31,7 +31,7 @@ export function SupportContactBox() {
     <div className="rounded-2xl border border-warning/30 bg-warning/5 p-5 text-right animate-fade-in shadow-lg">
       <div className="flex items-center gap-3 border-b border-warning/20 pb-3 mb-4">
         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-warning/20 text-warning text-lg">
-          💬
+          
         </div>
         <div>
           <h4 className="font-display text-base font-extrabold text-text-primary">
@@ -104,12 +104,12 @@ export function SupportActivationModal({
           onClick={onClose}
           className="absolute top-4 left-4 flex h-8 w-8 items-center justify-center rounded-full bg-surface-raised text-text-secondary hover:text-text-primary transition-colors"
         >
-          ✕
+          
         </button>
 
         <div className="flex items-center gap-3 border-b border-border pb-4 mb-5">
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-warning/20 text-warning text-xl font-bold">
-            📞
+            
           </div>
           <div>
             <h3 className="font-display text-lg font-extrabold text-text-primary">

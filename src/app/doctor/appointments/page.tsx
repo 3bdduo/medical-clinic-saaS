@@ -150,17 +150,17 @@ export default function DoctorAppointmentsPage() {
           <TabButton
             active={activeTab === "completed"}
             onClick={() => setActiveTab("completed")}
-            label="✅ السجل (المكتملة)"
+            label=" السجل (المكتملة)"
           />
           <TabButton
             active={activeTab === "cancelled"}
             onClick={() => setActiveTab("cancelled")}
-            label="❌ الملغاة"
+            label=" الملغاة"
           />
           <TabButton
             active={activeTab === "past"}
             onClick={() => setActiveTab("past")}
-            label="📅 الأيام السابقة"
+            label=" الأيام السابقة"
           />
         </div>
       </Card>
@@ -231,9 +231,9 @@ export default function DoctorAppointmentsPage() {
                       {patientName}
                     </h3>
                     <div className="flex flex-wrap items-center gap-3 mt-1 text-xs text-text-secondary">
-                      <span dir="ltr">📱 {patientPhone}</span>
-                      <span>👨‍⚕️ {doctorName}</span>
-                      <span>🕒 {appt.startTime || appt.date ? new Date(appt.date).toLocaleDateString("ar-EG") : "موعد فوري"}</span>
+                      <span dir="ltr"> {patientPhone}</span>
+                      <span>‍️ {doctorName}</span>
+                      <span> {appt.startTime || appt.date ? new Date(appt.date).toLocaleDateString("ar-EG") : "موعد فوري"}</span>
                     </div>
                   </div>
                 </div>
