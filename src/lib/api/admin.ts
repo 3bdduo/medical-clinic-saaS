@@ -1,5 +1,12 @@
 import { apiFetch } from "@/lib/http";
-import type { Admin, ApiEnvelope, Clinic, DashboardStats, Doctor } from "@/types/api";
+import type {
+  Admin,
+  ApiEnvelope,
+  Clinic,
+  DashboardStats,
+  Doctor,
+  RenewDoctorSubscriptionPayload,
+} from "@/types/api";
 
 // GET /admin/dash-board
 export function getDashboard() {
@@ -41,11 +48,14 @@ export function getClinicById(id: string) {
   return apiFetch<ApiEnvelope<{ clinic: Clinic }>>(`/admin/clinics/${id}`);
 }
 
-// PATCH /admin/doctors/:id/active  (renew / toggle subscription)
-export function toggleDoctorSubscription(id: string) {
+// PATCH /admin/doctors/:id/active  (renew subscription by N months)
+export function renewDoctorSubscription(
+  id: string,
+  payload: RenewDoctorSubscriptionPayload
+) {
   return apiFetch<ApiEnvelope<{ doctor: Doctor }>>(
     `/admin/doctors/${id}/active`,
-    { method: "PATCH" }
+    { method: "PATCH", body: JSON.stringify(payload) }
   );
 }
 

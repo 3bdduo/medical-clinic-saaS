@@ -8,6 +8,7 @@ import { getMyPatients } from "@/lib/api/patient";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import { SupportContactBox } from "@/components/SupportActivationModal";
 import type { Appointment, Clinic, Patient } from "@/types/api";
 
 export default function DoctorDashboardPage() {
@@ -93,16 +94,31 @@ export default function DoctorDashboardPage() {
 
   if (needsClinic) {
     return (
-      <Card className="mx-auto max-w-md text-center animate-fade-in">
-        <h2 className="font-display text-lg font-bold text-text-primary">
-          لم تُنشئ عيادتك بعد
+      <Card className="mx-auto max-w-xl text-center animate-fade-in p-6 sm:p-8 border-warning/30">
+        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-warning/15 text-warning text-2xl font-bold">
+          ⚠️
+        </div>
+        <h2 className="font-display text-xl font-extrabold text-text-primary">
+          الحساب غير مفعل حالياً (لم يتم التفعيل)
         </h2>
         <p className="mt-2 text-sm text-text-secondary">
-          أضف بيانات عيادتك أولًا لتتمكن من استقبال المواعيد
+          يرجى التواصل مع إدارة المنصة والدعم الفني لتفعيل حساب العيادة وتحديد خطة الاشتراك.
         </p>
-        <Link href="/doctor/clinic" className="mt-5 inline-block">
-          <Button>إنشاء العيادة</Button>
-        </Link>
+
+        <div className="mt-6 text-right">
+          <SupportContactBox />
+        </div>
+
+        <div className="mt-6 flex flex-wrap justify-center gap-3">
+          <Link href="/doctor/clinic">
+            <Button variant="vibrant">
+              بيانات العيادة 🏥
+            </Button>
+          </Link>
+          <Button variant="secondary" onClick={() => window.location.reload()}>
+            إعادة الفحص 🔄
+          </Button>
+        </div>
       </Card>
     );
   }

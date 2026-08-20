@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getDoctors, toggleDoctorSubscription, deleteDoctor } from "@/lib/api/admin";
+import { getDoctors, renewDoctorSubscription, deleteDoctor } from "@/lib/api/admin";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import type { Doctor } from "@/types/api";
@@ -25,7 +25,11 @@ export default function AdminDoctorsPage() {
   }, []);
 
   async function renew(id: string) {
-    await toggleDoctorSubscription(id);
+    const input = window.prompt("جدد الاشتراك لكام شهر؟", "1");
+    if (!input) return;
+    const monthNumber = Number(input);
+    if (!Number.isFinite(monthNumber) || monthNumber <= 0) return;
+    await renewDoctorSubscription(id, { monthNumber });
     load();
   }
 

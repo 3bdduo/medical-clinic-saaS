@@ -2,7 +2,7 @@
 
 import { FormEvent, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/Button";
 import { Field } from "@/components/ui/Input";
@@ -20,6 +20,7 @@ const ROLE_HOME: Record<string, string> = {
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { login } = useAuth();
   const [nationalId, setNationalId] = useState("");
   const [password, setPassword] = useState("");
@@ -51,7 +52,12 @@ export default function LoginPage() {
     setLoading(true);
     try {
       const role = await login({ nationalId: nationalId.trim(), password });
-      router.push(ROLE_HOME[role] ?? "/");
+      const redirectUrl = searchParams.get("redirect");
+      if (redirectUrl) {
+        router.push(redirectUrl);
+      } else {
+        router.push(ROLE_HOME[role] ?? "/");
+      }
     } catch (err) {
       setError(
         err instanceof ApiError ? err.message : "تعذّر تسجيل الدخول، حاول مرة أخرى"

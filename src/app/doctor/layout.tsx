@@ -2,13 +2,17 @@
 
 import { RequireRole } from "@/components/RequireRole";
 import { DashboardShell } from "@/components/layout/DashboardShell";
-import { IconDashboard, IconCalendar, IconUsers, IconClinic } from "@/components/ui/icons";
+import { IconDashboard, IconCalendar, IconUsers, IconClinic, IconBell } from "@/components/ui/icons";
 
 const NAV_ITEMS = [
   { href: "/doctor", label: "لوحة التحكم", icon: <IconDashboard /> },
-  { href: "/doctor/appointments", label: "المواعيد", icon: <IconCalendar /> },
-  { href: "/doctor/patients", label: "المرضى", icon: <IconUsers /> },
+  { href: "/doctor/appointments", label: "إدارة الحجوزات", icon: <IconCalendar /> },
+  { href: "/doctor/doctors", label: "أطباء العيادة", icon: <IconUsers /> },
+  { href: "/doctor/booking-settings", label: "إعدادات الحجز", icon: <IconCalendar /> },
+  { href: "/doctor/announcements", label: "إشعار للمرضى", icon: <IconBell /> },
+  { href: "/doctor/account-settings", label: "إعدادات الحساب", icon: <IconUsers /> },
   { href: "/doctor/clinic", label: "بيانات العيادة", icon: <IconClinic /> },
+  { href: "/doctor/patients", label: "سجلات المرضى", icon: <IconUsers /> },
 ];
 
 export default function DoctorLayout({ children }: { children: React.ReactNode }) {

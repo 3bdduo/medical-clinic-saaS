@@ -49,6 +49,7 @@ module.exports = {
         silky: "cubic-bezier(0.16, 1, 0.3, 1)",
         smooth: "cubic-bezier(0.25, 1, 0.5, 1)",
         spring: "cubic-bezier(0.34, 1.4, 0.64, 1)",
+        calm: "cubic-bezier(0.4, 0, 0.2, 1)",
       },
       transitionDuration: {
         350: "350ms",
@@ -83,6 +84,35 @@ module.exports = {
           "0%": { opacity: "0" },
           "100%": { opacity: "1" },
         },
+        "fade-scale-out": {
+          "0%": { opacity: "1", transform: "scale(1)" },
+          "100%": { opacity: "0", transform: "scale(1.05)" },
+        },
+        breathe: {
+          "0%, 100%": { transform: "scale(1)", opacity: "0.7" },
+          "50%": { transform: "scale(1.12)", opacity: "1" },
+        },
+        "scale-in": {
+          "0%": { opacity: "0", transform: "scale(0.88)" },
+          "100%": { opacity: "1", transform: "scale(1)" },
+        },
+        "pulse-glow": {
+          "0%, 100%": { opacity: "0.8", transform: "scale(0.95)", filter: "drop-shadow(0 0 10px rgba(0, 229, 255, 0.5))" },
+          "50%": { opacity: "1", transform: "scale(1.15)", filter: "drop-shadow(0 0 25px rgba(0, 229, 255, 0.9))" },
+        },
+        "float-slow": {
+          "0%, 100%": { transform: "translateY(0px)" },
+          "50%": { transform: "translateY(-10px)" },
+        },
+        "ecg-pulse": {
+          "0%": { strokeDasharray: "0 500", strokeDashoffset: "0" },
+          "50%": { strokeDasharray: "250 500", strokeDashoffset: "-100" },
+          "100%": { strokeDasharray: "500 500", strokeDashoffset: "-500" },
+        },
+        "ecg-scan": {
+          "0%": { transform: "translateX(-100%)" },
+          "100%": { transform: "translateX(100%)" },
+        },
       },
       animation: {
         drift: "drift 20s cubic-bezier(0.4, 0, 0.2, 1) infinite",
@@ -91,6 +121,13 @@ module.exports = {
         "scale-in-slow": "scale-in-slow 0.6s cubic-bezier(0.16,1,0.3,1) both",
         "slide-in-right": "slide-in-right 0.3s cubic-bezier(0.16,1,0.3,1) both",
         "fade-in": "fade-in 0.5s ease both",
+        "fade-scale-out": "fade-scale-out 0.5s cubic-bezier(0.4,0,0.2,1) forwards",
+        breathe: "breathe 3s ease-in-out infinite",
+        "scale-in": "scale-in 0.4s cubic-bezier(0.16,1,0.3,1) both",
+        "pulse-glow": "pulse-glow 2s ease-in-out infinite",
+        "float-slow": "float-slow 4s ease-in-out infinite",
+        "ecg-pulse": "ecg-pulse 1.2s ease-in-out infinite",
+        "ecg-scan": "ecg-scan 1.5s linear infinite",
       },
     },
   },

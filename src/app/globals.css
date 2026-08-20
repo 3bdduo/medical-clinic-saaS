@@ -6,103 +6,103 @@
    Design Tokens — High Contrast & Vibrant Colors
    ═══════════════════════════════════════════════ */
 :root {
-  /* ── Surface ── */
-  --color-bg: #F4F7F9;
-  --color-surface: #FFFFFF;
-  --color-surface-raised: #FFFFFF;
+  /* ── Surface (Sage & Forest Mint — Relaxed Green Tones, Zero Glare) ── */
+  --color-bg: #EBF1ED;
+  --color-surface: #DDE7E0;
+  --color-surface-raised: #E4EEE7;
 
-  /* ── Brand Colors (High-Contrast Rich Teal & Emerald for Light Mode) ── */
-  --color-primary: #00796B;
-  --color-primary-hover: #004D40;
-  --color-primary-light: #00897B;
-  --color-primary-soft: rgba(0, 121, 107, 0.10);
-  --color-accent: #059669;
-  --color-accent-hover: #047857;
-  --color-accent-soft: rgba(5, 150, 105, 0.12);
+  /* ── Brand Colors (Rich Emerald Forest Green & Calming Leaf Green) ── */
+  --color-primary: #1E5E3A;
+  --color-primary-hover: #16462B;
+  --color-primary-light: #297C4D;
+  --color-primary-soft: rgba(30, 94, 58, 0.10);
+  --color-accent: #82A381;
+  --color-accent-hover: #6D8E6C;
+  --color-accent-soft: rgba(130, 163, 129, 0.14);
 
-  /* ── Neon Glows ── */
-  --color-glow-cyan: rgba(0, 121, 107, 0.25);
-  --color-glow-emerald: rgba(5, 150, 105, 0.25);
+  /* ── Glows ── */
+  --color-glow-cyan: rgba(30, 94, 58, 0.20);
+  --color-glow-emerald: rgba(130, 163, 129, 0.20);
 
-  /* ── Text (Dark High Contrast for Light Mode) ── */
-  --color-text-primary: #0F172A;
-  --color-text-secondary: #334155;
+  /* ── Text (Ultra-Deep Forest Green-Black & Muted Deep Pine Green — Stark 8:1 Contrast) ── */
+  --color-text-primary: #0D2218;
+  --color-text-secondary: #2D503F;
 
   /* ── Borders & Dividers ── */
-  --color-border: #E2E8F0;
-  --color-border-hover: #CBD5E1;
+  --color-border: #C0D3C5;
+  --color-border-hover: #AFC5B5;
 
   /* ── Semantic ── */
-  --color-success: #059669;
-  --color-warning: #D97706;
-  --color-danger: #DC2626;
+  --color-success: #1E5E3A;
+  --color-warning: #C87A4B;
+  --color-danger: #C0392B;
 
   /* ── Glassmorphism ── */
-  --glass-bg: rgba(255, 255, 255, 0.85);
-  --glass-border: rgba(0, 121, 107, 0.15);
+  --glass-bg: rgba(221, 231, 224, 0.88);
+  --glass-border: rgba(30, 94, 58, 0.18);
   --glass-blur: 24px;
 
   /* ── Gradient Text Colors ── */
-  --gradient-text-start: #00796B;
-  --gradient-text-mid: #0284C7;
-  --gradient-text-end: #059669;
+  --gradient-text-start: #0D2218;
+  --gradient-text-mid: #1E5E3A;
+  --gradient-text-end: #C87A4B;
 
   /* ── Shadows ── */
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 8px 24px rgba(0, 121, 107, 0.08);
-  --shadow-lg: 0 20px 48px rgba(0, 121, 107, 0.12);
-  --shadow-glow: 0 0 30px rgba(0, 121, 107, 0.20);
+  --shadow-sm: 0 2px 8px rgba(13, 34, 24, 0.04);
+  --shadow-md: 0 8px 24px rgba(13, 34, 24, 0.07);
+  --shadow-lg: 0 20px 48px rgba(13, 34, 24, 0.10);
+  --shadow-glow: 0 0 30px rgba(30, 94, 58, 0.18);
 
   color-scheme: light;
 }
 
 .dark {
-  /* ── Surface (Futuristic Deep Obsidian) ── */
-  --color-bg: #090D12;
-  --color-surface: #111822;
-  --color-surface-raised: #182230;
+  /* ── Surface (Midnight Espresso & Navy — Deep Midnight Blue & Dark Espresso) ── */
+  --color-bg: #0B1017;
+  --color-surface: #191412;
+  --color-surface-raised: #231C1A;
 
-  /* ── Brand Colors (Vibrant Neon Cyan & Electric Mint for Dark Mode) ── */
-  --color-primary: #00E5FF;
-  --color-primary-hover: #33EBFF;
-  --color-primary-light: #80F4FF;
-  --color-primary-soft: rgba(0, 229, 255, 0.14);
-  --color-accent: #00E676;
-  --color-accent-hover: #33EB91;
-  --color-accent-soft: rgba(0, 230, 118, 0.14);
+  /* ── Brand Colors (Warm Copper-Brown & Deep Teal Accent) ── */
+  --color-primary: #C87A4B;
+  --color-primary-hover: #B06538;
+  --color-primary-light: #D98F62;
+  --color-primary-soft: rgba(200, 122, 75, 0.14);
+  --color-accent: #387478;
+  --color-accent-hover: #2B5C60;
+  --color-accent-soft: rgba(56, 116, 120, 0.14);
 
-  /* ── Neon Glows ── */
-  --color-glow-cyan: rgba(0, 229, 255, 0.40);
-  --color-glow-emerald: rgba(0, 230, 118, 0.35);
+  /* ── Glows ── */
+  --color-glow-cyan: rgba(200, 122, 75, 0.35);
+  --color-glow-emerald: rgba(56, 116, 120, 0.30);
 
-  /* ── Text (Light High Contrast for Dark Mode) ── */
-  --color-text-primary: #F8FAFC;
-  --color-text-secondary: #94A3B8;
+  /* ── Text (Crisp Off-White/Ice & Soft Slate Blue-Grey — Extreme Contrast) ── */
+  --color-text-primary: #F4F6F8;
+  --color-text-secondary: #A0ABC0;
 
   /* ── Borders & Dividers ── */
-  --color-border: #1E293B;
-  --color-border-hover: #334155;
+  --color-border: #283240;
+  --color-border-hover: #374558;
 
   /* ── Semantic ── */
-  --color-success: #00E676;
-  --color-warning: #FBBF24;
-  --color-danger: #FF5252;
+  --color-success: #387478;
+  --color-warning: #C87A4B;
+  --color-danger: #E53E3E;
 
   /* ── Glassmorphism ── */
-  --glass-bg: rgba(17, 24, 34, 0.82);
-  --glass-border: rgba(0, 229, 255, 0.20);
+  --glass-bg: rgba(25, 20, 18, 0.86);
+  --glass-border: rgba(200, 122, 75, 0.22);
   --glass-blur: 24px;
 
   /* ── Gradient Text Colors ── */
-  --gradient-text-start: #00E5FF;
-  --gradient-text-mid: #38BDF8;
-  --gradient-text-end: #00E676;
+  --gradient-text-start: #F4F6F8;
+  --gradient-text-mid: #C87A4B;
+  --gradient-text-end: #387478;
 
   /* ── Shadows ── */
   --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
   --shadow-md: 0 8px 28px rgba(0, 0, 0, 0.4);
   --shadow-lg: 0 20px 50px rgba(0, 0, 0, 0.5);
-  --shadow-glow: 0 0 35px rgba(0, 229, 255, 0.28);
+  --shadow-glow: 0 0 35px rgba(200, 122, 75, 0.25);
 
   color-scheme: dark;
 }

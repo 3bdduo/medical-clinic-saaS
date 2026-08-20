@@ -17,7 +17,8 @@ export function createAppointmentByPatient(
   );
 }
 
-// POST /appointment/doctor/:patientId  (doctor books on behalf of a known patient)
+// POST /appointment/doctor/:patientId  (doctor books on behalf of a known
+// patient — patientId goes in the URL, the target doctorId + date go in the body)
 export function createAppointmentByDoctor(
   patientId: string,
   payload: CreateAppointmentByDoctorPayload

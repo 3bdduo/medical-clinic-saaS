@@ -6,6 +6,8 @@ import { ThemeProvider } from "@/hooks/useTheme";
 import { AuthProvider } from "@/hooks/useAuth";
 import { Preloader } from "@/components/Preloader";
 import { AmbientBackground } from "@/components/AmbientBackground";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { HeartbeatLoader } from "@/components/ui/HeartbeatLoader";
 
 // Cairo: Arabic + Latin, calm geometric shapes fit a clinical/medical tone.
 const cairo = Cairo({
@@ -38,7 +40,7 @@ export const viewport: Viewport = {
   ],
 };
 
-import { ThemeToggle } from "@/components/ThemeToggle";
+
 
 export default function RootLayout({
   children,
@@ -61,6 +63,7 @@ export default function RootLayout({
         <ThemeProvider>
           <AuthProvider>
             <AmbientBackground />
+            <HeartbeatLoader />
             <Preloader>{children}</Preloader>
           </AuthProvider>
         </ThemeProvider>

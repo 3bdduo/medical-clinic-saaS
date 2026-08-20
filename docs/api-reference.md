@@ -66,8 +66,49 @@ All responses: `{ message, success, data }`. Auth: `Authorization: <accessToken>
 | GET | /medical-record/:id | — | Single record. |
 | GET | /medical-record | — | Patient's own shared records. |
 
+## notification (Authorization required)
+Doctor and patient each have their own mirrored set of routes — doctor routes
+have no `/patient` segment, patient routes do.
+
+| Method | Path | Body | Notes |
+|---|---|---|---|
+| POST | /notification | patientId, title, message | Doctor sends a notification to one of their patients. |
+| PUT | /notification/:id | message | Doctor edits a sent notification. |
+| GET | /notification | — | Doctor: every notification they've sent. |
+| GET | /notification/:id | — | Doctor: single notification. |
+| DELETE | /notification/:id | — | Doctor: delete one. |
+| DELETE | /notification | — | Doctor: delete all they've sent. |
+| GET | /notification/patient | — | Patient: their notification inbox. |
+| GET | /notification/patient/:id | — | Patient: single notification. |
+| DELETE | /notification/patient/:id | — | Patient: delete one. |
+| DELETE | /notification/patient | — | Patient: clear their inbox. |
+
+## Corrections made on the 2026-08-19 pass (second Postman export)
+The collection you shared changed/grew between the first `.mhtml` export and
+this `.pdf` export. Fixed to match the newer, more complete version:
+- **`PATCH /admin/doctors/:id/active`** does take a body: `{ "monthNumber": 2 }`.
+  The frontend was calling it with no body — fixed, and the admin doctors
+  page now prompts for a month count before renewing.
+- **`POST /appointment/doctor/:patientId`** — confirmed the body is
+  `{ doctorId, date }` (not `{ patientId, date }` — patientId only lives in
+  the URL). The frontend had the payload type wrong — fixed.
+- **`PUT /appointment/:id`** — the collection's only confirmed example body
+  is `{ "status": "confirmed" }`. The frontend previously also offered
+  `date`/`notes` on this payload with no confirmed example backing them —
+  narrowed the type to `status` only until the backend team confirms more.
+- Added the entire **notification** module (10 endpoints, table above) —
+  it didn't exist in the first export at all.
+
 ## Known gaps to confirm with the backend team
-- No endpoint list was found for **listing a doctor's own appointments by date/availability** (needed for a real booking calendar) — likely `GET /appointment` needs date-range query params, unconfirmed.
-- `PATCH /admin/doctors/:id/active` — unclear whether it *toggles* or *renews by N days*; frontend currently treats it as a single "renew" action.
-- No image upload endpoint for clinic/doctor profile photos was present in the collection — only prescription images (`/medical-record/extract`).
-- `admin/doctors` responses currently leak hashed passwords/OTP fields — flagged for the backend team, and stripped defensively in the frontend types/usage.
+- No endpoint for **listing a doctor's own appointments by date/availability**
+  (needed for a real booking calendar) — likely `GET /appointment` needs
+  date-range query params, unconfirmed.
+- No image upload endpoint for clinic/doctor profile photos — only
+  prescription images (`/medical-record/extract`).
+- `admin/doctors` responses currently leak hashed passwords/OTP fields —
+  flagged for the backend team, and stripped defensively in the frontend
+  types/usage.
+- `DELETE /appointment/:id` showed a leftover example body
+  (`{doctorId, clinicId, date}`) in the collection, which is unusual for a
+  DELETE — the frontend sends no body for this call; flag to the backend
+  team if deletion behaves unexpectedly.

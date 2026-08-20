@@ -194,15 +194,20 @@ export interface CreateAppointmentByPatientPayload {
   date: string; // YYYY-MM-DD
 }
 
+// Path is /appointment/doctor/:patientId — the patient is identified in the
+// URL; the body only carries which doctor + date (confirmed against the
+// Postman collection's saved example, 2026-08-19 pass).
 export interface CreateAppointmentByDoctorPayload {
-  patientId: string;
+  doctorId: string;
   date: string;
 }
 
+// Confirmed against the collection: the only field ever shown in the saved
+// example body is `status`. Treating date/notes as unsupported until the
+// backend team confirms otherwise — sending them may simply be ignored, or
+// may 400; don't rely on it.
 export interface UpdateAppointmentPayload {
-  date?: string;
-  status?: AppointmentStatus;
-  notes?: string;
+  status: AppointmentStatus;
 }
 
 export interface CreateMedicalRecordPayload {
@@ -212,4 +217,31 @@ export interface CreateMedicalRecordPayload {
   notes: string;
   prescriptionImageUrl?: string;
   visibility: "private" | "shared";
+}
+
+export interface RenewDoctorSubscriptionPayload {
+  monthNumber: number;
+}
+
+// ---- notification ----
+// Doctor-created, patient-facing notifications. Doctor and patient each have
+// their own mirrored set of endpoints (get/delete by id, get/delete all).
+
+export interface Notification {
+  _id: string;
+  patientId: string | Patient;
+  title: string;
+  message: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateNotificationPayload {
+  patientId: string;
+  title: string;
+  message: string;
+}
+
+export interface UpdateNotificationPayload {
+  message: string;
 }
