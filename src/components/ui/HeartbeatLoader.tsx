@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, Suspense } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 
-export function HeartbeatLoader() {
+function LoaderInner() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
@@ -176,5 +176,13 @@ export function HeartbeatLoader() {
         </div>
       )}
     </>
+  );
+}
+
+export function HeartbeatLoader() {
+  return (
+    <Suspense fallback={null}>
+      <LoaderInner />
+    </Suspense>
   );
 }
