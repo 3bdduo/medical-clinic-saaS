@@ -25,7 +25,7 @@ export async function extractFromPrescriptionImage(file: File) {
 // POST /medical-record
 // visibility: "private" (doctor-only) | "shared" (visible to the patient)
 export function createMedicalRecord(payload: CreateMedicalRecordPayload) {
-  return apiFetch<ApiEnvelope<{ createdMedicalRecord: MedicalRecord }>>(
+  return apiFetch<ApiEnvelope<MedicalRecord>>(
     "/medical-record",
     { method: "POST", body: JSON.stringify(payload) }
   );

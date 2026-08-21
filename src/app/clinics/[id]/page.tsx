@@ -1,78 +1,80 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { getPublicClinicById } from "@/lib/api/public";
+import { getPublicClinicById, getPublicClinicSlots } from "@/lib/api/public";
 import { createAppointmentByPatient } from "@/lib/api/appointment";
 import { useAuth } from "@/hooks/useAuth";
 import type { Clinic } from "@/types/api";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { ApiError } from "@/lib/http";
 
+/* ─── helpers ─────────────────────────────────────────────── */
+function tomorrow() {
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  return d.toISOString().split("T")[0];
+}
+
+const DAY_MAP: Record<string, string> = {
+  Sunday: "الأحد",
+  Monday: "الإثنين",
+  Tuesday: "الثلاثاء",
+  Wednesday: "الأربعاء",
+  Thursday: "الخميس",
+  Friday: "الجمعة",
+  Saturday: "السبت",
+};
+
+function formatTime(iso: string) {
+  try {
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) {
+      // It might already be HH:mm
+      return iso.slice(0, 5);
+    }
+    return d.toLocaleTimeString("ar-EG", { hour: "2-digit", minute: "2-digit", hour12: true });
+  } catch {
+    return iso;
+  }
+}
+
+/* ─── Page ─────────────────────────────────────────────────── */
 export default function ClinicDetailsPage({ params }: { params: { id: string } }) {
   const router = useRouter();
   const { isAuthenticated, role } = useAuth();
+
   const [clinic, setClinic] = useState<Clinic | null>(null);
   const [loading, setLoading] = useState(true);
-  const [date, setDate] = useState("");
+
+  // Booking form state
+  const [date, setDate] = useState(tomorrow());
+  const [notes, setNotes] = useState("");
   const [selectedSlot, setSelectedSlot] = useState("");
-  const [availableSlots, setAvailableSlots] = useState<string[]>([]);
+
+  // Slots state (only for time clinics)
+  const [slots, setSlots] = useState<string[]>([]);
+  const [slotsLoading, setSlotsLoading] = useState(false);
+  const [slotsError, setSlotsError] = useState<string | null>(null);
+
+  // Booking feedback state
   const [bookingLoading, setBookingLoading] = useState(false);
-  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [message, setMessage] = useState<{
+    type: "success" | "error" | "warning";
+    text: string;
+    queueNumber?: number;
+    startTime?: string;
+  } | null>(null);
 
-  // Simulated logic to generate slots for a chosen date
-  useEffect(() => {
-    if (!date || !clinic) {
-      setAvailableSlots([]);
-      setSelectedSlot("");
-      return;
-    }
-
-    const dayOfWeek = new Date(date)
-      .toLocaleDateString("en-US", { weekday: "long" })
-      .toLowerCase();
-
-    const workingDay = clinic.workingDays.find((wd) => wd.day === dayOfWeek);
-
-    if (!workingDay) {
-      setAvailableSlots([]); // No working hours this day
-      setSelectedSlot("");
-      return;
-    }
-
-    // Generate slots every 30 mins between from and to
-    const slots = [];
-    const parseTime = (t: string) => {
-      const [h, m] = t.split(":").map(Number);
-      return h * 60 + (m || 0);
-    };
-    
-    let currentMin = parseTime(workingDay.from);
-    const endMin = parseTime(workingDay.to);
-    
-    // Fallback slot duration is 30 mins
-    const slotDuration = (clinic as any).slotDuration || 30;
-
-    while (currentMin + slotDuration <= endMin) {
-      const h = Math.floor(currentMin / 60).toString().padStart(2, "0");
-      const m = (currentMin % 60).toString().padStart(2, "0");
-      slots.push(`${h}:${m}`);
-      currentMin += slotDuration;
-    }
-
-    setAvailableSlots(slots);
-    setSelectedSlot("");
-  }, [date, clinic]);
-
+  /* ── Load clinic ──────────────────────────────────────── */
   useEffect(() => {
     async function load() {
       try {
         const res = await getPublicClinicById(params.id);
-        if (res.success) {
-          setClinic(res.data.clinic);
-        }
-      } catch (err) {
-        console.error(err);
+        if (res.success) setClinic(res.data.clinic);
+      } catch {
+        /* not found */
       } finally {
         setLoading(false);
       }
@@ -80,6 +82,34 @@ export default function ClinicDetailsPage({ params }: { params: { id: string } }
     load();
   }, [params.id]);
 
+  /* ── Fetch slots whenever date changes (time clinics only) ── */
+  const fetchSlots = useCallback(
+    async (selectedDate: string) => {
+      if (!clinic || clinic.bookingType !== "time" || !selectedDate) return;
+      setSlotsLoading(true);
+      setSlotsError(null);
+      setSelectedSlot("");
+      try {
+        const res = await getPublicClinicSlots(params.id, selectedDate);
+        setSlots(res.data.availableSlots ?? []);
+      } catch (err: any) {
+        // 400 = queue clinic, or other error
+        setSlotsError(err?.message || "تعذّر تحميل المواعيد المتاحة");
+        setSlots([]);
+      } finally {
+        setSlotsLoading(false);
+      }
+    },
+    [clinic, params.id]
+  );
+
+  useEffect(() => {
+    if (clinic?.bookingType === "time" && date) {
+      fetchSlots(date);
+    }
+  }, [date, fetchSlots, clinic?.bookingType]);
+
+  /* ── Book appointment ─────────────────────────────────── */
   async function handleBook(e: React.FormEvent) {
     e.preventDefault();
     if (!date) return;
@@ -88,9 +118,15 @@ export default function ClinicDetailsPage({ params }: { params: { id: string } }
       router.push(`/login?redirect=/clinics/${params.id}`);
       return;
     }
-
     if (role !== "Patient") {
       setMessage({ type: "error", text: "فقط المرضى يمكنهم الحجز. يرجى تسجيل الدخول كـ مريض." });
+      return;
+    }
+
+    const doctorId =
+      typeof clinic?.doctorId === "string" ? clinic.doctorId : clinic?.doctorId?._id;
+    if (!doctorId) {
+      setMessage({ type: "error", text: "لا يمكن تحديد الطبيب المعالج لهذه العيادة." });
       return;
     }
 
@@ -98,28 +134,68 @@ export default function ClinicDetailsPage({ params }: { params: { id: string } }
     setMessage(null);
 
     try {
-      const doctorId = typeof clinic?.doctorId === "string" ? clinic.doctorId : clinic?.doctorId?._id;
-      if (!doctorId) throw new Error("لا يمكن تحديد الطبيب المعالج لهذه العيادة.");
-
-      await createAppointmentByPatient({
+      const payload: { doctorId: string; date: string; startTime?: string; notes?: string } = {
         doctorId,
         date,
-        startTime: selectedSlot,
-      });
-      setMessage({ type: "success", text: "تم حجز الموعد بنجاح! سيتم مراجعته وتأكيده قريباً." });
-      setDate("");
+        notes: notes || undefined,
+      };
+
+      if (clinic?.bookingType === "time") {
+        payload.startTime = selectedSlot;
+      }
+
+      const res = await createAppointmentByPatient(payload);
+      const appt = res.data.createdAppointment;
+
+      if (appt.status === "waitlisted") {
+        setMessage({
+          type: "warning",
+          text: "تم تسجيل طلبك، لكنك في قائمة الانتظار حالياً. سيتم تأكيد موعدك عند توفر مكان.",
+        });
+      } else {
+        setMessage({
+          type: "success",
+          text:
+            clinic?.bookingType === "queue"
+              ? `تم الحجز بنجاح! رقمك في الدور: ${appt.queueNumber ?? "—"}`
+              : `تم الحجز بنجاح! موعدك الساعة ${appt.startTime ? appt.startTime.slice(11, 16) : selectedSlot}`,
+          queueNumber: appt.queueNumber,
+          startTime: appt.startTime,
+        });
+      }
+
+      // Reset form
+      setDate(tomorrow());
       setSelectedSlot("");
+      setNotes("");
+
+      // Refresh slots after booking (slot just got taken)
+      if (clinic?.bookingType === "time") fetchSlots(tomorrow());
     } catch (err: any) {
-      setMessage({ type: "error", text: err.message || "حدث خطأ أثناء الحجز، يرجى المحاولة لاحقاً." });
+      if (err instanceof ApiError && err.status === 409) {
+        // Race condition — slot taken by someone else
+        setMessage({
+          type: "error",
+          text: "هذا الموعد تم حجزه للتو من شخص آخر. يرجى اختيار وقت آخر.",
+        });
+        // Refresh the slots list
+        fetchSlots(date);
+      } else {
+        setMessage({ type: "error", text: err.message || "حدث خطأ أثناء الحجز، يرجى المحاولة لاحقاً." });
+      }
     } finally {
       setBookingLoading(false);
     }
   }
 
+  /* ── Guards ─────────────────────────────────────────── */
   if (loading) {
     return (
       <div className="mx-auto max-w-4xl px-6 py-12 md:px-12">
-        <Card className="h-64 animate-pulse bg-surface-raised" />
+        <div className="grid gap-8 md:grid-cols-2">
+          <Card className="h-64 animate-pulse bg-surface-raised" />
+          <Card className="h-64 animate-pulse bg-surface-raised" />
+        </div>
       </div>
     );
   }
@@ -128,144 +204,291 @@ export default function ClinicDetailsPage({ params }: { params: { id: string } }
     return (
       <div className="mx-auto max-w-4xl px-6 py-20 text-center md:px-12">
         <h1 className="text-2xl font-bold text-text-primary">العيادة غير موجودة</h1>
-        <Button className="mt-4" onClick={() => router.push("/clinics")}>العودة للعيادات</Button>
+        <Button className="mt-4" onClick={() => router.push("/clinics")}>
+          العودة للعيادات
+        </Button>
       </div>
     );
   }
 
+  const isQueue = clinic.bookingType !== "time";
+  const isInactive = clinic.isActive === false;
+
+  // Disable booking button logic
+  const canSubmit =
+    !isInactive &&
+    date &&
+    (isQueue || (selectedSlot !== "" && !slotsLoading));
+
   return (
     <div className="mx-auto max-w-4xl px-6 py-12 md:px-12 animate-fade-in">
+      {/* Header */}
       <div className="mb-8">
         <Button variant="ghost" size="sm" onClick={() => router.push("/clinics")} className="mb-4">
-          &rarr; العودة لقائمة العيادات
+          ← العودة لقائمة العيادات
         </Button>
-        <h1 className="font-display text-3xl font-extrabold text-text-primary">
-          {clinic.name}
-        </h1>
-        <div className="mt-2 flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3 mb-1">
+          <h1 className="font-display text-3xl font-extrabold text-text-primary">{clinic.name}</h1>
+          <span
+            className={`rounded-full px-3 py-1 text-xs font-extrabold border ${
+              isInactive
+                ? "bg-danger/10 text-danger border-danger/30"
+                : "bg-success/10 text-success border-success/30"
+            }`}
+          >
+            {isInactive ? "🔴 مغلقة حالياً" : "🟢 تقبل حجوزات"}
+          </span>
+        </div>
+        <div className="flex flex-wrap items-center gap-3">
           <span className="rounded bg-primary/10 px-3 py-1 text-sm font-semibold text-primary">
             {clinic.specialization}
           </span>
           <span className="text-sm text-text-secondary">
             {clinic.governorate} - {clinic.city}
           </span>
+          <span
+            className={`rounded px-2 py-0.5 text-xs font-bold ${
+              isQueue
+                ? "bg-accent/10 text-accent border border-accent/30"
+                : "bg-primary/10 text-primary border border-primary/30"
+            }`}
+          >
+            {isQueue ? "📋 حجز بالدور" : "🕐 حجز بمواعيد محددة"}
+          </span>
         </div>
       </div>
 
       <div className="grid gap-8 md:grid-cols-2">
+        {/* ── Clinic Info Card ─────────────────────────────── */}
         <Card>
           <h2 className="font-display text-xl font-bold text-text-primary mb-4">تفاصيل العيادة</h2>
           <p className="text-text-secondary mb-6 leading-relaxed">
             {clinic.description || "لا يوجد وصف."}
           </p>
 
-          <div className="space-y-4 text-sm">
-            <div className="flex justify-between border-b border-border/50 pb-2">
-              <span className="text-text-secondary">سعر الكشف</span>
-              <span className="font-bold text-accent">{clinic.consultationPrice} ج.م</span>
-            </div>
-            <div className="flex justify-between border-b border-border/50 pb-2">
-              <span className="text-text-secondary">العنوان</span>
-              <span className="font-medium text-text-primary">{clinic.street || "غير محدد"}</span>
-            </div>
-            <div className="flex justify-between border-b border-border/50 pb-2">
-              <span className="text-text-secondary">الهاتف</span>
-              <span className="font-medium text-text-primary" dir="ltr">{clinic.phoneNumber}</span>
-            </div>
+          <div className="space-y-0 divide-y divide-border/40 text-sm">
+            <InfoRow label="سعر الكشف" value={`${clinic.consultationPrice} ج.م`} accent />
+            <InfoRow label="العنوان" value={clinic.street || "غير محدد"} />
+            <InfoRow label="رقم الهاتف" value={clinic.phoneNumber} dir="ltr" />
+            {clinic.email && <InfoRow label="البريد الإلكتروني" value={clinic.email} />}
+            <InfoRow
+              label="مدة الكشف"
+              value={
+                isQueue
+                  ? "حجز بأسبقية الحضور"
+                  : `${(clinic as any).slotDuration || "—"} دقيقة`
+              }
+            />
+            <InfoRow
+              label="الحد الأقصى يومياً"
+              value={`${(clinic as any).maxPatientsPerDay || "—"} مريض`}
+            />
           </div>
 
-          <div className="mt-6">
-            <h3 className="font-bold text-text-primary mb-3">أيام العمل</h3>
-            <ul className="space-y-2 text-sm text-text-secondary">
-              {clinic.workingDays.map((wd, i) => (
-                <li key={i} className="flex justify-between rounded bg-surface-raised px-3 py-2">
-                  <span className="capitalize">{wd.day}</span>
-                  <span>{wd.from} - {wd.to}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
+          {/* Working days */}
+          {clinic.workingDays?.length > 0 && (
+            <div className="mt-6">
+              <h3 className="font-bold text-text-primary mb-3">أيام العمل</h3>
+              <ul className="space-y-2 text-sm text-text-secondary">
+                {clinic.workingDays.map((wd, i) => (
+                  <li key={i} className="flex justify-between rounded-xl bg-surface-raised px-3 py-2">
+                    <span className="font-semibold text-text-primary">
+                      {DAY_MAP[wd.day] ?? wd.day}
+                    </span>
+                    <span dir="ltr">
+                      {formatTime(wd.from)} – {formatTime(wd.to)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </Card>
 
+        {/* ── Booking Card ─────────────────────────────────── */}
         <Card glass vibrant className="flex flex-col">
-          <h2 className="font-display text-xl font-bold text-text-primary mb-2">حجز موعد جديد</h2>
-          <p className="text-sm text-text-secondary mb-6">
-            اختر التاريخ المناسب للحجز. سيتم التواصل معك لتأكيد الموعد.
-          </p>
+          <h2 className="font-display text-xl font-bold text-text-primary mb-2">
+            {isInactive ? "العيادة مغلقة حالياً" : "احجز موعدك"}
+          </h2>
 
-          <form onSubmit={handleBook} className="flex flex-col gap-5 flex-1">
-            <div>
-              <label className="mb-1.5 block text-sm font-semibold text-text-primary">
-                تاريخ الحجز
-              </label>
-              <input
-                type="date"
-                required
-                min={new Date().toISOString().split("T")[0]}
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                className="w-full rounded-xl border border-border/80 bg-surface px-4 py-2.5 text-sm outline-none transition-all focus:border-primary focus:shadow-[0_0_0_3px_rgba(var(--color-primary-rgb),0.1)]"
-              />
-            </div>
-
-            {date && (
-              <div>
-                <label className="mb-1.5 block text-sm font-semibold text-text-primary">
-                  الساعة
-                </label>
-                {availableSlots.length > 0 ? (
-                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                    {availableSlots.map((slot) => (
-                      <button
-                        key={slot}
-                        type="button"
-                        onClick={() => setSelectedSlot(slot)}
-                        className={`rounded-xl border px-3 py-2 text-sm font-bold transition-all ${
-                          selectedSlot === slot
-                            ? "bg-primary text-surface border-primary shadow-glow-cyan"
-                            : "border-border/60 hover:border-primary/40 text-text-primary bg-surface-raised"
-                        }`}
-                      >
-                        {slot}
-                      </button>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="rounded-xl bg-danger/10 p-3 text-sm text-danger border border-danger/20 text-center">
-                    لا توجد مواعيد متاحة في هذا اليوم. يرجى اختيار يوم آخر.
-                  </div>
-                )}
-              </div>
-            )}
-
-            {message && (
-              <div className={`rounded-xl px-4 py-3 text-sm font-medium animate-fade-in-slow ${
-                message.type === "success" ? "bg-success/10 text-success border border-success/20" : "bg-danger/10 text-danger border border-danger/20"
-              }`}>
-                {message.text}
-              </div>
-            )}
-
-            <div className="mt-auto pt-6">
-              {!isAuthenticated ? (
-                <Button type="submit" variant="vibrant" className="w-full">
-                  تسجيل الدخول للحجز
-                </Button>
-              ) : (
-                <Button 
-                  type="submit" 
-                  variant="vibrant" 
-                  className="w-full shadow-glow-cyan" 
-                  loading={bookingLoading}
-                  disabled={!!date && availableSlots.length > 0 && !selectedSlot}
+          {isInactive ? (
+            <div className="flex flex-1 flex-col items-center justify-center gap-4 py-8 text-center">
+              <span className="text-5xl">🔴</span>
+              <p className="text-text-secondary text-sm leading-relaxed max-w-xs">
+                هذه العيادة غير متاحة للحجز حالياً. يرجى التواصل مع العيادة أو المحاولة في وقت لاحق.
+              </p>
+              {clinic.phoneNumber && (
+                <a
+                  href={`tel:${clinic.phoneNumber}`}
+                  className="rounded-xl bg-primary/10 text-primary px-4 py-2 text-sm font-bold hover:bg-primary/20 transition-colors"
                 >
-                  تأكيد الحجز
-                </Button>
+                  📞 {clinic.phoneNumber}
+                </a>
               )}
             </div>
-          </form>
+          ) : (
+            <form onSubmit={handleBook} className="flex flex-col gap-5 flex-1">
+              {/* Date picker */}
+              <div>
+                <label className="mb-1.5 block text-sm font-semibold text-text-primary">
+                  تاريخ الحجز *
+                </label>
+                <input
+                  type="date"
+                  required
+                  min={tomorrow()}
+                  value={date}
+                  onChange={(e) => {
+                    setDate(e.target.value);
+                    setMessage(null);
+                  }}
+                  className="w-full rounded-xl border border-border/80 bg-surface px-4 py-2.5 text-sm outline-none transition-all focus:border-primary focus:shadow-[0_0_0_3px_rgba(var(--color-primary-rgb),0.1)]"
+                />
+              </div>
+
+              {/* Time slots — only for 'time' clinics */}
+              {!isQueue && date && (
+                <div>
+                  <label className="mb-1.5 block text-sm font-semibold text-text-primary">
+                    اختر الوقت المناسب *
+                  </label>
+
+                  {slotsLoading ? (
+                    <div className="flex items-center gap-2 rounded-xl border border-border/50 bg-surface-raised px-4 py-3 text-sm text-text-secondary">
+                      <span className="h-4 w-4 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
+                      جارٍ تحميل الأوقات المتاحة...
+                    </div>
+                  ) : slotsError ? (
+                    <div className="rounded-xl bg-danger/10 border border-danger/20 p-3 text-sm text-danger text-center">
+                      {slotsError}
+                    </div>
+                  ) : slots.length > 0 ? (
+                    <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                      {slots.map((slot) => (
+                        <button
+                          key={slot}
+                          type="button"
+                          onClick={() => setSelectedSlot(slot)}
+                          className={`rounded-xl border px-3 py-2 text-sm font-bold transition-all duration-150 ${
+                            selectedSlot === slot
+                              ? "bg-primary text-surface border-primary shadow-glow-cyan"
+                              : "border-border/60 hover:border-primary/40 text-text-primary bg-surface-raised"
+                          }`}
+                        >
+                          {slot}
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="rounded-xl bg-warning/10 border border-warning/20 p-3 text-sm text-warning text-center">
+                      لا توجد مواعيد متاحة في هذا اليوم. يرجى اختيار يوم آخر.
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Queue notice */}
+              {isQueue && date && (
+                <div className="rounded-xl bg-accent/10 border border-accent/20 px-4 py-3 text-sm text-text-primary">
+                  <span className="font-bold text-accent">📋 نظام الطابور:</span> ستحصل على رقم دور تلقائياً عند تأكيد الحجز. لا حاجة لاختيار وقت محدد.
+                </div>
+              )}
+
+              {/* Notes */}
+              <div>
+                <label className="mb-1.5 block text-sm font-semibold text-text-primary">
+                  ملاحظات (اختياري)
+                </label>
+                <textarea
+                  rows={3}
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="أضف أي ملاحظات بخصوص حالتك..."
+                  className="w-full rounded-xl border border-border/80 bg-surface px-4 py-2.5 text-sm outline-none resize-none transition-all focus:border-primary focus:shadow-[0_0_0_3px_rgba(var(--color-primary-rgb),0.1)]"
+                />
+              </div>
+
+              {/* Feedback message */}
+              {message && (
+                <div
+                  className={`rounded-xl px-4 py-3 text-sm font-medium animate-fade-in border ${
+                    message.type === "success"
+                      ? "bg-success/10 text-success border-success/20"
+                      : message.type === "warning"
+                      ? "bg-warning/10 text-warning border-warning/20"
+                      : "bg-danger/10 text-danger border-danger/20"
+                  }`}
+                >
+                  {message.text}
+                  {message.type === "error" && clinic.bookingType === "time" && (
+                    <button
+                      type="button"
+                      onClick={() => fetchSlots(date)}
+                      className="block mt-1 underline text-xs opacity-70 hover:opacity-100"
+                    >
+                      🔄 تحديث الأوقات المتاحة
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {/* Submit */}
+              <div className="mt-auto pt-4">
+                {!isAuthenticated ? (
+                  <Button
+                    type="submit"
+                    variant="vibrant"
+                    className="w-full font-bold shadow-glow-cyan"
+                  >
+                    سجّل دخولك للحجز
+                  </Button>
+                ) : (
+                  <Button
+                    type="submit"
+                    variant="vibrant"
+                    className="w-full shadow-glow-cyan font-bold"
+                    loading={bookingLoading}
+                    disabled={!canSubmit || bookingLoading}
+                  >
+                    {bookingLoading
+                      ? "جارٍ تأكيد الحجز..."
+                      : isQueue
+                      ? "تأكيد الحجز 📋"
+                      : selectedSlot
+                      ? `احجز الساعة ${selectedSlot} 🕐`
+                      : "اختر وقتاً أولاً"}
+                  </Button>
+                )}
+              </div>
+            </form>
+          )}
         </Card>
       </div>
+    </div>
+  );
+}
+
+/* ─── Info row component ─────────────────────────────── */
+function InfoRow({
+  label,
+  value,
+  accent,
+  dir,
+}: {
+  label: string;
+  value?: string | number | null;
+  accent?: boolean;
+  dir?: "ltr" | "rtl";
+}) {
+  return (
+    <div className="flex items-center justify-between py-3">
+      <span className="text-text-secondary">{label}</span>
+      <span
+        className={`font-semibold ${accent ? "text-accent text-base font-black" : "text-text-primary"}`}
+        dir={dir}
+      >
+        {value ?? "—"}
+      </span>
     </div>
   );
 }

@@ -39,7 +39,6 @@ export function refreshToken(refreshTokenValue: string) {
   return apiFetch<ApiEnvelope<{ result: AuthTokens }>>("/auth/refresh-token", {
     method: "POST",
     body: JSON.stringify({ refreshToken: refreshTokenValue }),
-    auth: false,
   });
 }
 

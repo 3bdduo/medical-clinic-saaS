@@ -1,11 +1,12 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { DoctorActivationBanner } from "@/components/DoctorActivationBanner";
 import { Card } from "@/components/ui/Card";
 import { Field } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
-import { getMe, updateMe } from "@/lib/api/doctor";
+import { getMe, updateMe, deleteMyAccount } from "@/lib/api/doctor";
 import { ApiError } from "@/lib/http";
 import { validateEmail, validateEgyptianPhone } from "@/lib/validators";
 
@@ -30,6 +31,11 @@ export default function DoctorAccountSettingsPage() {
 
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [passwordSuccess, setPasswordSuccess] = useState(false);
+
+  // Delete Account State
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
     getMe()
@@ -113,6 +119,19 @@ export default function DoctorAccountSettingsPage() {
       setPasswordError(msg);
     } finally {
       setSavingPassword(false);
+    }
+  }
+
+  async function handleDeleteAccount() {
+    setDeleting(true);
+    try {
+      await deleteMyAccount();
+      // Remove token and redirect to login
+      localStorage.removeItem("token");
+      router.push("/login");
+    } catch (err) {
+      alert(err instanceof ApiError ? err.message : "تعذّر حذف الحساب");
+      setDeleting(false);
     }
   }
 
@@ -262,6 +281,62 @@ export default function DoctorAccountSettingsPage() {
           </Button>
         </form>
       </Card>
+
+      {/* Card 3: Danger Zone */}
+      <Card className="p-6 md:p-8 border-danger/30 bg-danger/5 shadow-2xl">
+        <h2 className="font-display text-lg font-bold text-danger mb-2 flex items-center gap-2">
+          <span>⚠️</span>
+          <span>منطقة الخطر (حذف الحساب)</span>
+        </h2>
+        <p className="text-sm text-text-secondary mb-4 leading-relaxed">
+          حذف حسابك سيؤدي إلى مسح جميع بياناتك، عيادتك، مواعيدك، وسجلات المرضى المرتبطة بك نهائياً ولا يمكن التراجع عن هذا الإجراء.
+        </p>
+        <Button 
+          variant="danger" 
+          onClick={() => setShowDeleteModal(true)}
+          className="font-bold border border-danger/50"
+        >
+          حذف الحساب نهائياً
+        </Button>
+      </Card>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-bg/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <Card className="max-w-md w-full shadow-2xl border-danger/50 bg-surface">
+            <div className="flex flex-col items-center text-center gap-4 py-4">
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-danger/10 text-danger text-3xl font-black">
+                !
+              </div>
+              <div>
+                <h3 className="font-display text-xl font-bold text-text-primary">
+                  هل أنت متأكد من حذف حسابك؟
+                </h3>
+                <p className="text-sm text-text-secondary mt-2 leading-relaxed">
+                  سيتم فقدان <strong>جميع البيانات</strong> الخاصة بالعيادة والمواعيد للأبد. هذا الإجراء نهائي ولا رجعة فيه.
+                </p>
+              </div>
+              <div className="flex w-full gap-3 mt-4">
+                <Button 
+                  variant="danger" 
+                  className="flex-1 font-bold" 
+                  onClick={handleDeleteAccount}
+                  disabled={deleting}
+                >
+                  {deleting ? "جارٍ الحذف..." : "نعم، احذف حسابي"}
+                </Button>
+                <Button 
+                  variant="secondary" 
+                  className="flex-1 font-bold" 
+                  onClick={() => setShowDeleteModal(false)}
+                >
+                  تراجع
+                </Button>
+              </div>
+            </div>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }

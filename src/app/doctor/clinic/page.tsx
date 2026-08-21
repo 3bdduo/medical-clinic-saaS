@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { createClinic, getMe, getMyClinic, updateMyClinic } from "@/lib/api/doctor";
+import { createClinic, getMe, getMyClinic, updateMyClinic, updateClinicStatus } from "@/lib/api/doctor";
 import { Card } from "@/components/ui/Card";
 import { Field, SelectField, TextAreaField } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
@@ -22,6 +22,8 @@ const EMPTY: CreateClinicPayload = {
   specialization: "",
   consultationPrice: 0,
   workingDays: [],
+  bookingType: "queue",
+  maxPatientsPerDay: 20,
 };
 
 /* ─── Read-only info row ─────────────────────────────────────────────────── */
@@ -140,6 +142,26 @@ export default function DoctorClinicPage() {
   const [saving, setSaving] = useState(false);
   const [sectionError, setSectionError] = useState<string | null>(null);
   const [globalSuccess, setGlobalSuccess] = useState<string | null>(null);
+
+  // Status toggle state
+  const [togglingStatus, setTogglingStatus] = useState(false);
+
+  async function handleToggleStatus() {
+    if (!exists || !form._id) return;
+    setTogglingStatus(true);
+    setSectionError(null);
+    try {
+      const newStatus = !form.isActive;
+      await updateClinicStatus({ isActive: newStatus });
+      setForm((prev) => ({ ...prev, isActive: newStatus }));
+      setGlobalSuccess(newStatus ? "تم تفعيل العيادة وتظهر الآن للمرضى" : "تم إيقاف العيادة ولن تظهر للمرضى");
+      setTimeout(() => setGlobalSuccess(null), 4000);
+    } catch (err) {
+      setSectionError(err instanceof ApiError ? err.message : "تعذّر تغيير حالة العيادة");
+    } finally {
+      setTogglingStatus(false);
+    }
+  }
 
   /* ── Load on mount ─────────────────────────────────────────────────── */
   useEffect(() => {
@@ -270,9 +292,25 @@ export default function DoctorClinicPage() {
               ? "حساب الطبيب مُفعل بالكامل (اشتراك ساري في المنصة)"
               : "حساب الطبيب غير مُفعل حالياً (لم يتم التفعيل بعد من إدارة المنصة)"}
           </div>
-          <span className={`rounded-full px-3 py-1 text-xs font-extrabold ${doctor.isPaid ? "bg-success/20 text-success" : "bg-warning/20 text-warning"}`}>
-            {doctor.isPaid ? "مُفعل " : "لم يتم التفعيل ️"}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className={`rounded-full px-3 py-1 text-xs font-extrabold ${doctor.isPaid ? "bg-success/20 text-success" : "bg-warning/20 text-warning"}`}>
+              {doctor.isPaid ? "مُفعل " : "لم يتم التفعيل ️"}
+            </span>
+            {exists && (
+              <button
+                onClick={handleToggleStatus}
+                disabled={togglingStatus}
+                className={`rounded-full px-3 py-1 text-xs font-extrabold flex items-center gap-1 transition-all ${
+                  form.isActive
+                    ? "bg-primary/20 text-primary hover:bg-primary/30"
+                    : "bg-surface-raised border border-border/50 text-text-secondary hover:bg-surface"
+                }`}
+              >
+                {togglingStatus && <span className="h-3 w-3 rounded-full border-2 border-current border-t-transparent animate-spin" />}
+                {form.isActive ? "العيادة ظاهرة للجمهور 👁️" : "العيادة مخفية 🚫"}
+              </button>
+            )}
+          </div>
         </div>
       )}
 
@@ -473,6 +511,56 @@ export default function DoctorClinicPage() {
             />
           </Section>
 
+          {/* ── Section 4: Booking Settings ───────────────── */}
+          <Section
+            title="إعدادات الحجز والكشف"
+            icon="📅"
+            editing={isEditing("booking")}
+            saving={saving}
+            onEdit={() => startEdit("booking")}
+            onCancel={cancelEdit}
+            onSave={saveSection}
+            viewChildren={
+              <>
+                <InfoRow label="نظام الحجز" value={form.bookingType === "time" ? "مواعيد محددة (Time)" : "بالدور (Queue)"} />
+                <InfoRow label="الحد الأقصى للمرضى يومياً" value={form.maxPatientsPerDay} />
+                {form.bookingType === "time" && (
+                  <InfoRow label="مدة الكشف (بالدقائق)" value={form.slotDuration} />
+                )}
+              </>
+            }
+          >
+            <SelectField
+              label="نظام الحجز *"
+              required
+              value={draft.bookingType || "queue"}
+              onChange={(e) => updateDraft("bookingType", e.target.value as "time" | "queue")}
+              options={[
+                { label: "حجز بالدور (Queue)", value: "queue" },
+                { label: "حجز بمواعيد محددة (Time)", value: "time" },
+              ]}
+              className="sm:col-span-2"
+            />
+            <Field
+              label="الحد الأقصى للمرضى في اليوم *"
+              type="number"
+              required
+              min={1}
+              value={draft.maxPatientsPerDay || ""}
+              onChange={(e) => updateDraft("maxPatientsPerDay", Number(e.target.value))}
+            />
+            {draft.bookingType === "time" && (
+              <Field
+                label="مدة الكشف التقريبية (بالدقائق) *"
+                type="number"
+                required
+                min={5}
+                value={draft.slotDuration || ""}
+                onChange={(e) => updateDraft("slotDuration", Number(e.target.value))}
+              />
+            )}
+          </Section>
+
           {/* Create button only if clinic doesn't exist yet */}
           {!exists && (
             <Button
@@ -546,6 +634,27 @@ export default function DoctorClinicPage() {
               <p className="text-sm leading-relaxed text-text-primary">
                 {form.description || <span className="italic opacity-50">لم يتم إضافة تفاصيل الموقع بعد.</span>}
               </p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-border/50">
+              <div className="flex items-center gap-3 rounded-2xl bg-surface p-4 border border-border/60">
+                <span className="text-xl">📅</span>
+                <div>
+                  <p className="text-[11px] font-extrabold text-text-secondary">نظام الحجز</p>
+                  <p className="text-sm font-bold text-text-primary">
+                    {form.bookingType === "time" ? "مواعيد محددة" : "أسبقية الحضور (طابور)"}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 rounded-2xl bg-surface p-4 border border-border/60">
+                <span className="text-xl">👥</span>
+                <div>
+                  <p className="text-[11px] font-extrabold text-text-secondary">الحد الأقصى للمرضى</p>
+                  <p className="text-sm font-bold text-text-primary">
+                    {form.maxPatientsPerDay ? `${form.maxPatientsPerDay} مريض يومياً` : "—"}
+                  </p>
+                </div>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-border/50">

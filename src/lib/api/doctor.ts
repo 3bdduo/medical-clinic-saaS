@@ -44,3 +44,24 @@ export function updateMyClinic(payload: Partial<CreateClinicPayload>) {
 export function getMyClinic() {
   return apiFetch<ApiEnvelope<Clinic>>("/doctor/clinic");
 }
+
+// PUT /doctor/profile-image
+export function updateProfileImage(formData: FormData) {
+  return apiFetch<ApiEnvelope<{ public_id: string; secure_url: string }>>("/doctor/profile-image", {
+    method: "PUT",
+    body: formData,
+  });
+}
+
+// PUT /doctor/clinic/status
+export function updateClinicStatus(payload: { isActive: boolean }) {
+  return apiFetch<ApiEnvelope<null>>("/doctor/clinic/status", {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+// GET /clinic/:clinicId/slots?date=YYYY-MM-DD
+export function getAvailableSlots(clinicId: string, date: string) {
+  return apiFetch<ApiEnvelope<{ availableSlots: any[] }>>(`/clinic/${clinicId}/slots?date=${date}`);
+}

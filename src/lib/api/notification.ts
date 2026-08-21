@@ -50,8 +50,9 @@ export function deleteAllNotificationsForDoctor() {
 }
 
 // GET /notification/patient  (patient: all notifications addressed to them)
+// Note: backend returns key "notification" (no 's') for this endpoint
 export function getAllNotificationsForPatient() {
-  return apiFetch<ApiEnvelope<{ notifications: Notification[] }>>(
+  return apiFetch<ApiEnvelope<{ notification: Notification[] }>>(
     "/notification/patient"
   );
 }

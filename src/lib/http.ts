@@ -54,9 +54,13 @@ async function tryRefreshToken(): Promise<boolean> {
   if (!refreshToken) return false;
 
   if (!refreshPromise) {
+    const accessToken = getAccessToken();
     refreshPromise = fetch(`${API_BASE_URL}/auth/refresh-token`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...(accessToken ? { Authorization: accessToken } : {}),
+      },
       body: JSON.stringify({ refreshToken }),
     })
       .then(async (res) => {

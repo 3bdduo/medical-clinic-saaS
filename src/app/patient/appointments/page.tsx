@@ -117,11 +117,17 @@ export default function PatientAppointmentsPage() {
     }
   }
 
-  async function handleCancel(id: string) {
+  async function handleCancel(appt: Appointment) {
     if (!confirm("هل أنت تأكد من رغبتك في إلغاء هذا الموعد؟")) return;
-    setCancellingId(id);
+    setCancellingId(appt._id);
     try {
-      await deleteAppointment(id);
+      const doctorId = typeof appt.doctorId === "object" ? appt.doctorId._id : appt.doctorId;
+      const clinicId = typeof appt.clinicId === "object" ? appt.clinicId._id : appt.clinicId;
+      await deleteAppointment(appt._id, {
+        doctorId,
+        clinicId,
+        date: appt.date?.split("T")[0] ?? "",
+      });
       loadData();
     } catch (err) {
       alert(err instanceof ApiError ? err.message : "تعذّر إلغاء الموعد");
@@ -287,7 +293,7 @@ export default function PatientAppointmentsPage() {
                             variant="ghost"
                             size="sm"
                             disabled={cancellingId === a._id}
-                            onClick={() => handleCancel(a._id)}
+                            onClick={() => handleCancel(a)}
                             className="text-danger hover:bg-danger/10"
                           >
                             {cancellingId === a._id ? "جارٍ الإلغاء..." : "إلغاء الموعد"}

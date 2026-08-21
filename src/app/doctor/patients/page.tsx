@@ -3,8 +3,11 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { getMyPatients } from "@/lib/api/patient";
+import { createNotification } from "@/lib/api/notification";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { Field, TextAreaField } from "@/components/ui/Input";
+import { ApiError } from "@/lib/http";
 import type { Patient } from "@/types/api";
 
 export default function DoctorPatientsPage() {
@@ -12,6 +15,15 @@ export default function DoctorPatientsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+
+  // Notification Modal State
+  const [showNotifModal, setShowNotifModal] = useState(false);
+  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
+  const [notifTitle, setNotifTitle] = useState("");
+  const [notifMessage, setNotifMessage] = useState("");
+  const [sendingNotif, setSendingNotif] = useState(false);
+  const [notifError, setNotifError] = useState<string | null>(null);
+  const [notifSuccess, setNotifSuccess] = useState(false);
 
   useEffect(() => {
     getMyPatients()
@@ -26,6 +38,40 @@ export default function DoctorPatientsPage() {
       })
       .finally(() => setLoading(false));
   }, []);
+
+  function openNotificationModal(e: React.MouseEvent, p: Patient) {
+    e.preventDefault();
+    e.stopPropagation();
+    setSelectedPatient(p);
+    setNotifTitle("");
+    setNotifMessage("");
+    setNotifError(null);
+    setNotifSuccess(false);
+    setShowNotifModal(true);
+  }
+
+  async function handleSendNotification(e: React.FormEvent) {
+    e.preventDefault();
+    if (!selectedPatient) return;
+    
+    setSendingNotif(true);
+    setNotifError(null);
+    setNotifSuccess(false);
+    
+    try {
+      await createNotification({
+        patientId: selectedPatient._id,
+        title: notifTitle,
+        message: notifMessage,
+      });
+      setNotifSuccess(true);
+      setTimeout(() => setShowNotifModal(false), 2000);
+    } catch (err) {
+      setNotifError(err instanceof ApiError ? err.message : "تعذّر إرسال الإشعار");
+    } finally {
+      setSendingNotif(false);
+    }
+  }
 
   const filteredPatients = patients.filter((p) => {
     const name = `${p.firstName} ${p.lastName}`.toLowerCase();
@@ -122,13 +168,94 @@ export default function DoctorPatientsPage() {
                     </p>
                   )}
                 </div>
-                <div className="mt-4 pt-3 border-t border-border/40 flex items-center justify-between text-xs text-primary font-bold">
-                  <span>عرض السجل الكامل</span>
-                  <span>←</span>
+                
+                <div className="mt-4 pt-3 border-t border-border/40 flex items-center justify-between text-xs font-bold">
+                  <span className="text-primary group-hover:underline">عرض السجل الكامل ←</span>
+                  
+                  <Button 
+                    variant="secondary" 
+                    size="sm" 
+                    className="h-8 px-2 z-10 hover:bg-primary hover:text-surface hover:border-primary transition-colors"
+                    onClick={(e) => openNotificationModal(e, p)}
+                  >
+                    إرسال إشعار 🔔
+                  </Button>
                 </div>
               </Card>
             </Link>
           ))}
+        </div>
+      )}
+
+      {/* Send Notification Modal */}
+      {showNotifModal && selectedPatient && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-bg/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <Card className="max-w-md w-full shadow-2xl bg-surface border-primary/20">
+            <div className="flex items-center justify-between border-b border-border/50 pb-4 mb-4">
+              <h3 className="font-display text-lg font-bold text-text-primary flex items-center gap-2">
+                <span>🔔</span>
+                <span>إرسال إشعار للمريض</span>
+              </h3>
+              <button
+                onClick={() => setShowNotifModal(false)}
+                className="text-text-secondary hover:text-danger transition-colors h-8 w-8 flex items-center justify-center rounded-full hover:bg-danger/10"
+              >
+                ✕
+              </button>
+            </div>
+            
+            <p className="text-sm text-text-secondary mb-4">
+              إرسال رسالة مباشرة للمريض: <span className="font-bold text-text-primary">{selectedPatient.firstName} {selectedPatient.lastName}</span>
+            </p>
+
+            <form onSubmit={handleSendNotification} className="flex flex-col gap-4">
+              <Field
+                label="عنوان الإشعار *"
+                required
+                value={notifTitle}
+                onChange={(e) => setNotifTitle(e.target.value)}
+                placeholder="مثال: تذكير بموعد الاستشارة"
+              />
+              <TextAreaField
+                label="نص الرسالة *"
+                required
+                value={notifMessage}
+                onChange={(e) => setNotifMessage(e.target.value)}
+                placeholder="اكتب رسالتك هنا..."
+              />
+              
+              {notifError && (
+                <div className="rounded-xl bg-danger/10 border border-danger/20 p-3 text-xs font-bold text-danger">
+                  {notifError}
+                </div>
+              )}
+              
+              {notifSuccess && (
+                <div className="rounded-xl bg-success/10 border border-success/20 p-3 text-xs font-bold text-success">
+                  تم إرسال الإشعار بنجاح! 
+                </div>
+              )}
+
+              <div className="flex w-full gap-3 mt-2">
+                <Button 
+                  type="submit"
+                  variant="vibrant" 
+                  className="flex-1 font-bold shadow-glow-cyan" 
+                  disabled={sendingNotif || notifSuccess}
+                >
+                  {sendingNotif ? "جارٍ الإرسال..." : "إرسال"}
+                </Button>
+                <Button 
+                  type="button"
+                  variant="secondary" 
+                  className="flex-1 font-bold" 
+                  onClick={() => setShowNotifModal(false)}
+                >
+                  إغلاق
+                </Button>
+              </div>
+            </form>
+          </Card>
         </div>
       )}
     </div>

@@ -20,12 +20,12 @@ export function getMyPatients() {
 
 // GET /patient/my-patient/:id  (doctor viewing one of their patients)
 export function getMyPatientById(id: string) {
-  return apiFetch<ApiEnvelope<{ patient: Patient }>>(`/patient/my-patient/${id}`);
+  return apiFetch<ApiEnvelope<{ result: Patient }>>(`/patient/my-patient/${id}`);
 }
 
 // PUT /patient  (patient updates own profile)
 export function updateMe(payload: Partial<Patient>) {
-  return apiFetch<ApiEnvelope<{ patient: Patient }>>("/patient", {
+  return apiFetch<ApiEnvelope<{ updatedPatient: Patient }>>("/patient", {
     method: "PUT",
     body: JSON.stringify(payload),
   });
@@ -33,7 +33,7 @@ export function updateMe(payload: Partial<Patient>) {
 
 // PUT /patient/:id  (doctor updates a patient's record)
 export function updatePatientByDoctor(id: string, payload: Partial<Patient>) {
-  return apiFetch<ApiEnvelope<{ patient: Patient }>>(`/patient/${id}`, {
+  return apiFetch<ApiEnvelope<{ updatedPatient: Patient }>>(`/patient/${id}`, {
     method: "PUT",
     body: JSON.stringify(payload),
   });

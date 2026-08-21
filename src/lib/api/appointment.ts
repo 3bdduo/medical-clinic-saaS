@@ -4,6 +4,7 @@ import type {
   Appointment,
   CreateAppointmentByDoctorPayload,
   CreateAppointmentByPatientPayload,
+  DeleteAppointmentPayload,
   UpdateAppointmentPayload,
 } from "@/types/api";
 
@@ -17,8 +18,8 @@ export function createAppointmentByPatient(
   );
 }
 
-// POST /appointment/doctor/:patientId  (doctor books on behalf of a known
-// patient — patientId goes in the URL, the target doctorId + date go in the body)
+// POST /appointment/doctor/:patientId  (doctor books on behalf of a patient)
+// patientId goes in the URL; body only carries { date }
 export function createAppointmentByDoctor(
   patientId: string,
   payload: CreateAppointmentByDoctorPayload
@@ -29,10 +30,11 @@ export function createAppointmentByDoctor(
   );
 }
 
-// DELETE /appointment/:id
-export function deleteAppointment(id: string) {
+// DELETE /appointment/:id  (body carries doctorId, clinicId, date)
+export function deleteAppointment(id: string, payload: DeleteAppointmentPayload) {
   return apiFetch<ApiEnvelope<null>>(`/appointment/${id}`, {
     method: "DELETE",
+    body: JSON.stringify(payload),
   });
 }
 
@@ -50,7 +52,7 @@ export function getAppointmentById(id: string) {
 
 // PUT /appointment/:id
 export function updateAppointment(id: string, payload: UpdateAppointmentPayload) {
-  return apiFetch<ApiEnvelope<{ updatedAppointment: Appointment }>>(
+  return apiFetch<ApiEnvelope<{ appointment: Appointment }>>(
     `/appointment/${id}`,
     { method: "PUT", body: JSON.stringify(payload) }
   );

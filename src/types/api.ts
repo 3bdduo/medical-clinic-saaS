@@ -11,30 +11,35 @@ export interface ApiEnvelope<T> {
 
 export interface WorkingDay {
   day:
-    | "saturday"
-    | "sunday"
-    | "monday"
-    | "tuesday"
-    | "wednesday"
-    | "thursday"
-    | "friday";
-  from: string; // ISO time
-  to: string; // ISO time
+    | "Saturday"
+    | "Sunday"
+    | "Monday"
+    | "Tuesday"
+    | "Wednesday"
+    | "Thursday"
+    | "Friday";
+  from: string; // ISO datetime (only HH:mm is used)
+  to: string; // ISO datetime (only HH:mm is used)
 }
 
 export interface Clinic {
   _id: string;
-  doctorId: string | { _id: string; role: Role; firstName: string; lastName: string };
+  doctorId: string | { _id: string; role: Role; firstName: string; lastName: string; image?: { public_id: string; secure_url: string } };
   name: string;
   description?: string;
   phoneNumber: string;
   email: string;
   street?: string;
+  address?: string;
   governorate: string;
   city: string;
   specialization: string;
   consultationPrice: number;
   workingDays: WorkingDay[];
+  isActive?: boolean;
+  bookingType?: "time" | "queue";
+  maxPatientsPerDay?: number;
+  slotDuration?: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -80,7 +85,7 @@ export interface Patient {
   updatedAt: string;
 }
 
-export type AppointmentStatus = "pending" | "confirmed" | "completed" | "cancelled";
+export type AppointmentStatus = "pending" | "confirmed" | "completed" | "cancelled" | "waitlisted";
 
 export interface Appointment {
   _id: string;
@@ -88,10 +93,11 @@ export interface Appointment {
   doctorId: string | Doctor;
   clinicId: string | Clinic;
   date: string;
-  startTime: string;
-  endTime: string;
+  startTime?: string;
+  endTime?: string;
   status: AppointmentStatus;
   notes?: string;
+  queueNumber?: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -111,6 +117,8 @@ export interface ExtractedPrescription {
 
 export interface MedicalRecord {
   _id: string;
+  patientId: string | { _id: string; role: string; firstName: string; lastName: string };
+  doctorId: string | { _id: string; role: string; firstName: string; lastName: string };
   appointmentId: string;
   diagnosis: string;
   medications: Medication[];
@@ -184,31 +192,40 @@ export interface CreateClinicPayload {
   governorate: string;
   city: string;
   street?: string;
+  address?: string;
   specialization: string;
   consultationPrice: number;
   workingDays: WorkingDay[];
+  bookingType?: "time" | "queue";
+  maxPatientsPerDay?: number;
   slotDuration?: number; // minutes per appointment slot, e.g. 30
+  _id?: string;
+  isActive?: boolean;
 }
 
 export interface CreateAppointmentByPatientPayload {
   doctorId: string;
   date: string; // YYYY-MM-DD
-  startTime?: string;
+  startTime?: string; // HH:mm if bookingType is time
+  notes?: string;
 }
 
 // Path is /appointment/doctor/:patientId — the patient is identified in the
-// URL; the body only carries which doctor + date (confirmed against the
-// Postman collection's saved example, 2026-08-19 pass).
+// URL; the body only carries date (doctor creates appt for a specific patient).
 export interface CreateAppointmentByDoctorPayload {
-  doctorId: string;
   date: string;
   startTime?: string;
+  notes?: string;
 }
 
-// Confirmed against the collection: the only field ever shown in the saved
-// example body is `status`. Treating date/notes as unsupported until the
-// backend team confirms otherwise — sending them may simply be ignored, or
-// may 400; don't rely on it.
+// DELETE /appointment/:id body
+export interface DeleteAppointmentPayload {
+  doctorId: string;
+  clinicId: string;
+  date: string; // YYYY-MM-DD
+}
+
+// Only `status` confirmed in the collection example body.
 export interface UpdateAppointmentPayload {
   status: AppointmentStatus;
 }
@@ -233,6 +250,7 @@ export interface RenewDoctorSubscriptionPayload {
 export interface Notification {
   _id: string;
   patientId: string | Patient;
+  doctorId: string | { _id: string; role: string; firstName: string; lastName: string };
   title: string;
   message: string;
   isRead?: boolean;

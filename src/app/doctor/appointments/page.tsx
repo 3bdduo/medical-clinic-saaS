@@ -5,8 +5,13 @@ import { DoctorActivationBanner } from "@/components/DoctorActivationBanner";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { StatusBadge } from "@/components/ui/StatusBadge";
-import { getMyAppointments, updateAppointment } from "@/lib/api/appointment";
-import type { Appointment, AppointmentStatus } from "@/types/api";
+import { getMyAppointments, updateAppointment, createAppointmentByDoctor } from "@/lib/api/appointment";
+import { getMyPatients } from "@/lib/api/patient";
+import { getMyClinic } from "@/lib/api/doctor";
+import { getPublicClinicSlots } from "@/lib/api/public";
+import type { Appointment, AppointmentStatus, Clinic, Patient } from "@/types/api";
+import { Field, SelectField, TextAreaField } from "@/components/ui/Input";
+import { ApiError } from "@/lib/http";
 
 type TabFilter = "active" | "completed" | "cancelled" | "past";
 
@@ -20,6 +25,25 @@ export default function DoctorAppointmentsPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabFilter>("active");
   const [searchQuery, setSearchQuery] = useState("");
+
+  // Clinic state (for bookingType)
+  const [clinic, setClinic] = useState<Clinic | null>(null);
+
+  // New Appointment Modal State
+  const [showNewModal, setShowNewModal] = useState(false);
+  const [patients, setPatients] = useState<Patient[]>([]);
+  const [loadingPatients, setLoadingPatients] = useState(false);
+
+  const [newPatientId, setNewPatientId] = useState("");
+  const [newDate, setNewDate] = useState("");
+  const [newNotes, setNewNotes] = useState("");
+  const [newStartTime, setNewStartTime] = useState("");
+  const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
+
+  // Slots for time-type clinics
+  const [modalSlots, setModalSlots] = useState<string[]>([]);
+  const [loadingSlots, setLoadingSlots] = useState(false);
 
   useEffect(() => {
     fetchAppointments();
@@ -42,6 +66,75 @@ export default function DoctorAppointmentsPage() {
       fetchAppointments();
     } catch (err) {
       console.error("Failed to update appointment:", err);
+    }
+  }
+
+  async function openNewAppointmentModal() {
+    setShowNewModal(true);
+    setCreateError(null);
+    setNewPatientId("");
+    setNewDate("");
+    setNewNotes("");
+    setNewStartTime("");
+    setModalSlots([]);
+
+    if (patients.length === 0) {
+      setLoadingPatients(true);
+      try {
+        const res = await getMyPatients();
+        setPatients(res.data.patients ?? []);
+      } catch (err) {
+        console.error("Failed to fetch patients", err);
+      } finally {
+        setLoadingPatients(false);
+      }
+    }
+
+    // Fetch clinic info to know bookingType
+    if (!clinic) {
+      try {
+        const res = await getMyClinic();
+        setClinic(res.data as unknown as Clinic);
+      } catch {
+        /* doctor may not have a clinic yet */
+      }
+    }
+  }
+
+  async function fetchModalSlots(date: string) {
+    const clinicId = typeof clinic?._id === "string" ? clinic._id : (clinic as any)?._id;
+    if (!clinic || clinic.bookingType !== "time" || !clinicId || !date) {
+      setModalSlots([]);
+      return;
+    }
+    setLoadingSlots(true);
+    setNewStartTime("");
+    try {
+      const res = await getPublicClinicSlots(clinicId, date);
+      setModalSlots(res.data.availableSlots ?? []);
+    } catch {
+      setModalSlots([]);
+    } finally {
+      setLoadingSlots(false);
+    }
+  }
+
+  async function handleCreateAppointment(e: React.FormEvent) {
+    e.preventDefault();
+    setCreateError(null);
+    setCreating(true);
+    try {
+      await createAppointmentByDoctor(newPatientId, {
+        date: newDate,
+        startTime: clinic?.bookingType === "time" ? newStartTime : undefined,
+        notes: newNotes || undefined,
+      });
+      setShowNewModal(false);
+      fetchAppointments();
+    } catch (err) {
+      setCreateError(err instanceof ApiError ? err.message : "تعذّر إنشاء الموعد");
+    } finally {
+      setCreating(false);
     }
   }
 
@@ -87,6 +180,9 @@ export default function DoctorAppointmentsPage() {
             متابعة وجدولة كشوفات العيادة وتصفية المواعيد حسب اليوم والحالة
           </p>
         </div>
+        <Button onClick={openNewAppointmentModal} variant="vibrant" className="shadow-glow-cyan font-bold">
+          + حجز موعد جديد
+        </Button>
       </div>
 
       {/* Main Status Tabs */}
@@ -183,7 +279,13 @@ export default function DoctorAppointmentsPage() {
                     <div className="flex flex-wrap items-center gap-3 mt-1 text-xs text-text-secondary">
                       <span dir="ltr"> {patientPhone}</span>
                       <span>‍️ {doctorName}</span>
-                      <span> {appt.startTime || appt.date ? new Date(appt.date).toLocaleDateString("ar-EG") : "موعد فوري"}</span>
+                      {appt.startTime ? (
+                        <span>🕐 {appt.startTime.slice(11, 16)}</span>
+                      ) : appt.queueNumber != null ? (
+                        <span>📋 دور #{appt.queueNumber}</span>
+                      ) : (
+                        <span>📅 {new Date(appt.date).toLocaleDateString("ar-EG")}</span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -224,6 +326,134 @@ export default function DoctorAppointmentsPage() {
               </Card>
             );
           })}
+        </div>
+      )}
+
+      {/* New Appointment Modal */}
+      {showNewModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-bg/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <Card className="max-w-md w-full shadow-2xl bg-surface">
+            <div className="flex items-center justify-between border-b border-border/50 pb-4 mb-4">
+              <h3 className="font-display text-xl font-bold text-text-primary">
+                إضافة حجز جديد
+              </h3>
+              <button
+                onClick={() => setShowNewModal(false)}
+                className="text-text-secondary hover:text-text-primary"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateAppointment} className="flex flex-col gap-4">
+              {loadingPatients ? (
+                <div className="text-sm text-text-secondary py-2 text-center">جارٍ تحميل قائمة المرضى...</div>
+              ) : (
+                <SelectField
+                  label="اختر المريض *"
+                  required
+                  value={newPatientId}
+                  onChange={(e) => setNewPatientId(e.target.value)}
+                  options={[
+                    { label: "-- الرجاء اختيار مريض --", value: "" },
+                    ...patients.map(p => ({ label: `${p.firstName} ${p.lastName} (${p.phoneNumber})`, value: p._id }))
+                  ]}
+                />
+              )}
+
+              <Field
+                label="تاريخ الموعد *"
+                type="date"
+                required
+                min={new Date().toISOString().split("T")[0]}
+                value={newDate}
+                onChange={(e) => {
+                  setNewDate(e.target.value);
+                  fetchModalSlots(e.target.value);
+                }}
+              />
+
+              {/* Slot picker — only for time clinics */}
+              {clinic?.bookingType === "time" && newDate && (
+                <div>
+                  <label className="mb-1.5 block text-sm font-semibold text-text-primary">
+                    وقت الكشف *
+                  </label>
+                  {loadingSlots ? (
+                    <div className="flex items-center gap-2 text-sm text-text-secondary py-2">
+                      <span className="h-4 w-4 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
+                      جارٍ تحميل الأوقات...
+                    </div>
+                  ) : modalSlots.length > 0 ? (
+                    <div className="grid grid-cols-3 gap-2">
+                      {modalSlots.map((slot) => (
+                        <button
+                          key={slot}
+                          type="button"
+                          onClick={() => setNewStartTime(slot)}
+                          className={`rounded-xl border px-2 py-2 text-sm font-bold transition-all ${
+                            newStartTime === slot
+                              ? "bg-primary text-surface border-primary shadow-glow-cyan"
+                              : "border-border/60 hover:border-primary/40 text-text-primary bg-surface-raised"
+                          }`}
+                        >
+                          {slot}
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="rounded-xl bg-warning/10 border border-warning/20 p-3 text-xs text-warning">
+                      لا توجد مواعيد متاحة في هذا اليوم
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Queue notice */}
+              {clinic && clinic.bookingType !== "time" && newDate && (
+                <div className="rounded-xl bg-accent/10 border border-accent/20 px-3 py-2 text-xs text-text-primary">
+                  📋 العيادة تعمل بنظام الطابور — سيتم تعيين رقم الدور تلقائياً.
+                </div>
+              )}
+
+              <TextAreaField
+                label="ملاحظات (اختياري)"
+                value={newNotes}
+                onChange={(e) => setNewNotes(e.target.value)}
+                placeholder="أضف أي ملاحظات بخصوص هذا الحجز..."
+              />
+
+              {createError && (
+                <div className="rounded-xl bg-danger/10 border border-danger/20 p-3 text-xs font-bold text-danger">
+                  {createError}
+                </div>
+              )}
+
+              <div className="flex w-full gap-3 mt-2">
+                <Button
+                  type="submit"
+                  variant="vibrant"
+                  className="flex-1 font-bold shadow-glow-cyan"
+                  disabled={
+                    creating ||
+                    !newPatientId ||
+                    !newDate ||
+                    (clinic?.bookingType === "time" && !newStartTime)
+                  }
+                >
+                  {creating ? "جارٍ الحفظ..." : "تأكيد الحجز"}
+                </Button>
+                <Button 
+                  type="button"
+                  variant="secondary" 
+                  className="flex-1 font-bold" 
+                  onClick={() => setShowNewModal(false)}
+                >
+                  إلغاء
+                </Button>
+              </div>
+            </form>
+          </Card>
         </div>
       )}
     </div>

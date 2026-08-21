@@ -27,7 +27,7 @@ export default function PatientNotificationsPage() {
     setLoading(true);
     try {
       const res = await getAllNotificationsForPatient();
-      setNotifications(res.data.notifications ?? []);
+      setNotifications(res.data.notification ?? []);
     } catch (err) {
       console.error(err);
     } finally {

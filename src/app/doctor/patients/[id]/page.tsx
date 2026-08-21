@@ -57,7 +57,7 @@ export default function DoctorPatientDetailPage() {
         ]);
 
         if (patRes.status === "fulfilled") {
-          const p = patRes.value.data.patient;
+          const p = patRes.value.data.result;
           setPatient(p);
           setEditForm({
             firstName: p.firstName ?? "",
@@ -114,7 +114,6 @@ export default function DoctorPatientDetailPage() {
     setBooking(true);
     try {
       await createAppointmentByDoctor(id, {
-        doctorId: bookDoctorId,
         date: bookDate,
         ...(bookStartTime ? { startTime: bookStartTime } : {}),
       });

@@ -23,13 +23,13 @@ interface DayConfig {
 }
 
 const ARABIC_DAYS: Record<WorkingDay["day"], string> = {
-  saturday: "السبت",
-  sunday: "الأحد",
-  monday: "الإثنين",
-  tuesday: "الثلاثاء",
-  wednesday: "الأربعاء",
-  thursday: "الخميس",
-  friday: "الجمعة",
+  Saturday: "السبت",
+  Sunday: "الأحد",
+  Monday: "الإثنين",
+  Tuesday: "الثلاثاء",
+  Wednesday: "الأربعاء",
+  Thursday: "الخميس",
+  Friday: "الجمعة",
 };
 
 const DEFAULT_DAYS: DayConfig[] = (Object.keys(ARABIC_DAYS) as WorkingDay["day"][]).map((dayKey) => ({
