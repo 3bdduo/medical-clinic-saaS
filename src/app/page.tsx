@@ -75,7 +75,7 @@ export default function LandingPage() {
             <div className="mt-8 flex flex-col gap-3 pt-6 border-t border-border/60">
               <Link href="/register" className="w-full">
                 <Button variant="vibrant" size="lg" className="w-full justify-center text-base font-bold shadow-glow-cyan">
-                  تسجيل عيادة جديدة 🩺
+                  تسجيل عيادة جديدة 
                 </Button>
               </Link>
               <Link href="/login" className="w-full">

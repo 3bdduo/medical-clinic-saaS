@@ -33,6 +33,7 @@ export default function DoctorPatientDetailPage() {
 
   // Book appointment state
   const [bookDate, setBookDate] = useState("");
+  const [bookStartTime, setBookStartTime] = useState("");
   const [bookDoctorId, setBookDoctorId] = useState("");
   const [booking, setBooking] = useState(false);
   const [bookError, setBookError] = useState<string | null>(null);
@@ -92,7 +93,12 @@ export default function DoctorPatientDetailPage() {
     setEditError(null);
     setEditSaving(true);
     try {
-      await updatePatientByDoctor(id, editForm);
+      // Only send firstName, lastName, phoneNumber — nationalId must NOT be sent
+      await updatePatientByDoctor(id, {
+        firstName: editForm.firstName,
+        lastName: editForm.lastName,
+        phoneNumber: editForm.phoneNumber,
+      });
       setEditSuccess(true);
       setTimeout(() => setEditSuccess(false), 3000);
     } catch (err) {
@@ -107,9 +113,14 @@ export default function DoctorPatientDetailPage() {
     setBookError(null);
     setBooking(true);
     try {
-      await createAppointmentByDoctor(id, { doctorId: bookDoctorId, date: bookDate });
+      await createAppointmentByDoctor(id, {
+        doctorId: bookDoctorId,
+        date: bookDate,
+        ...(bookStartTime ? { startTime: bookStartTime } : {}),
+      });
       setBookSuccess(true);
       setBookDate("");
+      setBookStartTime("");
       setTimeout(() => setBookSuccess(false), 3000);
     } catch (err) {
       setBookError(err instanceof ApiError ? err.message : "تعذّر حجز الموعد");
@@ -316,6 +327,13 @@ export default function DoctorPatientDetailPage() {
                 value={bookDate}
                 onChange={(e) => setBookDate(e.target.value)}
               />
+              <Field
+                label="وقت بدء الكشف (اختياري)"
+                type="time"
+                value={bookStartTime}
+                onChange={(e) => setBookStartTime(e.target.value)}
+                placeholder="مثال: 10:00"
+              />
               {bookError && <p className="text-sm text-danger">{bookError}</p>}
               {bookSuccess && <p className="text-sm text-success font-bold"> تم حجز الموعد بنجاح!</p>}
               <Button type="submit" variant="vibrant" disabled={booking} className="shadow-glow-cyan">
@@ -392,14 +410,8 @@ export default function DoctorPatientDetailPage() {
               value={editForm.phoneNumber}
               onChange={(e) => setEditForm((f) => ({ ...f, phoneNumber: e.target.value }))}
             />
-            <Field
-              label="البريد الإلكتروني"
-              type="email"
-              value={editForm.email}
-              onChange={(e) => setEditForm((f) => ({ ...f, email: e.target.value }))}
-            />
             <p className="text-xs text-text-secondary rounded-lg bg-surface-raised px-3 py-2">
-              ️ الرقم القومي (nationalId) لا يمكن تعديله
+              ️ الرقم القومي (nationalId) والبريد الإلكتروني لا يمكن تعديلهما
             </p>
             {editError && <p className="text-sm text-danger">{editError}</p>}
             {editSuccess && <p className="text-sm text-success font-bold"> تم تحديث البيانات بنجاح!</p>}

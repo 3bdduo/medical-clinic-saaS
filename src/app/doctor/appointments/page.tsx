@@ -17,27 +17,12 @@ interface ClinicDoctorMock {
 
 export default function DoctorAppointmentsPage() {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const [clinicDoctors, setClinicDoctors] = useState<{ id: string; name: string }[]>([
-    { id: "all", name: "الكل" },
-  ]);
   const [loading, setLoading] = useState(true);
-  const [activeDoctorId, setActiveDoctorId] = useState("all");
   const [activeTab, setActiveTab] = useState<TabFilter>("active");
   const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     fetchAppointments();
-
-    const savedDocs = localStorage.getItem("clinic_doctors_list");
-    if (savedDocs) {
-      try {
-        const parsed = JSON.parse(savedDocs);
-        const mapped = parsed.map((d: any) => ({ id: d.id, name: d.name }));
-        setClinicDoctors([{ id: "all", name: "الكل" }, ...mapped]);
-      } catch (e) {
-        console.error(e);
-      }
-    }
   }, []);
 
   async function fetchAppointments() {
@@ -64,13 +49,7 @@ export default function DoctorAppointmentsPage() {
 
   // Filter appointments
   const filteredAppointments = appointments.filter((appt) => {
-    // 1. Doctor Filter
-    if (activeDoctorId !== "all") {
-      const doctorIdStr = typeof appt.doctorId === "string" ? appt.doctorId : appt.doctorId?._id;
-      if (doctorIdStr !== activeDoctorId) return false;
-    }
-
-    // 2. Tab Filter
+    // 1. Tab Filter
     const apptDate = appt.date ? appt.date.split("T")[0] : "";
     if (activeTab === "active" && (appt.status === "pending" || appt.status === "confirmed")) {
       return apptDate >= todayStr;
@@ -94,14 +73,6 @@ export default function DoctorAppointmentsPage() {
     return patientName.toLowerCase().includes(q) || phone.includes(q);
   });
 
-  const getDoctorCount = (docId: string) => {
-    if (docId === "all") return appointments.length;
-    return appointments.filter((a) => {
-      const dId = typeof a.doctorId === "string" ? a.doctorId : a.doctorId?._id;
-      return dId === docId;
-    }).length;
-  };
-
   return (
     <div className="flex flex-col gap-6 animate-fade-in">
       <DoctorActivationBanner />
@@ -113,29 +84,8 @@ export default function DoctorAppointmentsPage() {
             إدارة الحجوزات
           </h1>
           <p className="text-sm text-text-secondary mt-1">
-            متابعة وجدولة كشوفات العيادة، تصفية المواعيد حسب الطبيب واليوم والحالة
+            متابعة وجدولة كشوفات العيادة وتصفية المواعيد حسب اليوم والحالة
           </p>
-        </div>
-
-        {/* Doctor Filter Pills */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide">
-          <span className="text-xs font-bold text-text-secondary whitespace-nowrap ml-1">فلتر الأطباء:</span>
-          {clinicDoctors.map((doc) => (
-            <button
-              key={doc.id}
-              onClick={() => setActiveDoctorId(doc.id)}
-              className={`flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-bold transition-all duration-300 ${
-                activeDoctorId === doc.id
-                  ? "bg-primary text-surface shadow-glow-cyan"
-                  : "bg-surface-raised text-text-secondary hover:bg-border/60"
-              }`}
-            >
-              <span>{doc.name}</span>
-              <span className="rounded-full bg-surface/20 px-2 py-0.5 text-[10px]">
-                {getDoctorCount(doc.id)}
-              </span>
-            </button>
-          ))}
         </div>
       </div>
 

@@ -22,6 +22,7 @@ export default function PatientAppointmentsPage() {
   const [selectedDoctorId, setSelectedDoctorId] = useState("");
   const [customDoctorId, setCustomDoctorId] = useState("");
   const [date, setDate] = useState("");
+  const [startTime, setStartTime] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -96,11 +97,16 @@ export default function PatientAppointmentsPage() {
 
     setBooking(true);
     try {
-      await createAppointmentByPatient({ doctorId: targetDoctorId, date });
+      await createAppointmentByPatient({
+        doctorId: targetDoctorId,
+        date,
+        ...(startTime ? { startTime } : {}),
+      });
       setSuccess("تم إرسال طلب حجز الموعد بنجاح!");
       setSelectedDoctorId("");
       setCustomDoctorId("");
       setDate("");
+      setStartTime("");
       loadData();
     } catch (err) {
       setError(
@@ -183,7 +189,15 @@ export default function PatientAppointmentsPage() {
             value={date}
             min={new Date().toISOString().split("T")[0]}
             onChange={(e) => setDate(e.target.value)}
-            className="sm:col-span-2"
+          />
+
+          {/* Start Time */}
+          <Field
+            label="وقت بدء الكشف (اختياري)"
+            type="time"
+            value={startTime}
+            onChange={(e) => setStartTime(e.target.value)}
+            placeholder="مثال: 10:00"
           />
 
           {error && (

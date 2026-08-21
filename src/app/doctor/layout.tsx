@@ -7,7 +7,6 @@ import { IconDashboard, IconCalendar, IconUsers, IconClinic, IconBell } from "@/
 const NAV_ITEMS = [
   { href: "/doctor", label: "لوحة التحكم", icon: <IconDashboard /> },
   { href: "/doctor/appointments", label: "إدارة الحجوزات", icon: <IconCalendar /> },
-  { href: "/doctor/doctors", label: "أطباء العيادة", icon: <IconUsers /> },
   { href: "/doctor/booking-settings", label: "إعدادات الحجز", icon: <IconCalendar /> },
   { href: "/doctor/announcements", label: "إشعار للمرضى", icon: <IconBell /> },
   { href: "/doctor/account-settings", label: "إعدادات الحساب", icon: <IconUsers /> },

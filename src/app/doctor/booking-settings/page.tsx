@@ -64,11 +64,14 @@ export default function BookingSettingsPage() {
                 isOpen: true,
                 fromTime: serverDay.from || defDay.fromTime,
                 toTime: serverDay.to || defDay.toTime,
+                // Load slotDuration from clinic if available
+                slotDuration: (clinic as any).slotDuration ?? defDay.slotDuration,
               };
             } else {
               return {
                 ...defDay,
                 isOpen: false,
+                slotDuration: (clinic as any).slotDuration ?? defDay.slotDuration,
               };
             }
           });
@@ -87,8 +90,12 @@ export default function BookingSettingsPage() {
         to: d.toTime,
       }));
 
+    // slotDuration is a clinic-level setting; use the first open day's value (they share one setting)
+    const firstOpen = updatedDays.find((d) => d.isOpen);
+    const slotDuration = firstOpen?.slotDuration ?? 30;
+
     try {
-      await updateMyClinic({ workingDays: workingDaysPayload });
+      await updateMyClinic({ workingDays: workingDaysPayload, slotDuration });
     } catch (err) {
       console.error("Failed to update workingDays in backend:", err);
     }
@@ -189,6 +196,32 @@ export default function BookingSettingsPage() {
                     value={day.toTime}
                     onChange={(val) => updateDay(idx, { toTime: val })}
                   />
+                </div>
+
+                {/* Slot Duration */}
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-semibold text-text-primary">
+                    مدة الكشف الواحد (بالدقائق)
+                  </label>
+                  <div className="flex items-center gap-3">
+                    {[15, 20, 30, 45, 60].map((mins) => (
+                      <button
+                        key={mins}
+                        type="button"
+                        onClick={() => updateDay(idx, { slotDuration: mins })}
+                        className={`rounded-xl px-4 py-2 text-sm font-bold transition-all duration-200 ${
+                          day.slotDuration === mins
+                            ? "bg-primary text-surface shadow-glow-cyan"
+                            : "bg-surface-raised text-text-secondary hover:bg-border/60"
+                        }`}
+                      >
+                        {mins} د
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-xs text-text-secondary mt-1">
+                    الكشف الحالي: <span className="font-bold text-primary">{day.slotDuration} دقيقة</span>
+                  </p>
                 </div>
 
                 <div className="flex flex-col gap-3 mt-4 pt-4 border-t border-border/40">

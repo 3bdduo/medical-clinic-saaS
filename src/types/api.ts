@@ -187,6 +187,7 @@ export interface CreateClinicPayload {
   specialization: string;
   consultationPrice: number;
   workingDays: WorkingDay[];
+  slotDuration?: number; // minutes per appointment slot, e.g. 30
 }
 
 export interface CreateAppointmentByPatientPayload {
@@ -234,6 +235,7 @@ export interface Notification {
   patientId: string | Patient;
   title: string;
   message: string;
+  isRead?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -245,5 +247,6 @@ export interface CreateNotificationPayload {
 }
 
 export interface UpdateNotificationPayload {
+  title?: string;
   message: string;
 }
